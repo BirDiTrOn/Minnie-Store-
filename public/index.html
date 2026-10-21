@@ -135,6 +135,20 @@ footer .wrap{display:flex;flex-wrap:wrap;justify-content:space-between;gap:16px;
 .empty{grid-column:1/-1;color:var(--muted);padding:24px;text-align:center;background:var(--surface);border:1px dashed var(--line);border-radius:16px}
 .pkg[disabled]{opacity:.4}
 
+/* phones: show games two per row, smaller */
+@media (max-width:560px){
+  section.block{padding-block:20px}
+  .sec-head h2{font-size:24px}
+  .grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  .game{padding:8px;gap:8px;border-radius:14px}
+  .art{aspect-ratio:1/1;border-radius:9px}
+  .art .ico{height:66%;max-width:66%}
+  .art b{font-size:34px}
+  .art i{left:6px;bottom:6px;font-size:9.5px;padding:2px 7px}
+  .game h3{font-size:14px;line-height:1.25}
+  .game small,.game .from{font-size:12px}
+}
+
 </style>
 </head>
 <body>
