@@ -13,9 +13,9 @@ export default {
     {
       "id": "rbx-login",
       "name": "Robux (Login)",
-      "tag": "Login",
-      "sub": "We top up through your Roblox account.",
-      "note": "Login details are shared privately on Telegram after payment, never on this page.",
+      "tag": "ចូលគណនី",
+      "sub": "យើងបញ្ចូលតាមរយៈគណនី Roblox របស់អ្នក។",
+      "note": "ព័ត៌មានចូលគណនីត្រូវបានផ្ញើជាឯកជនតាម Telegram បន្ទាប់ពីបង់ប្រាក់ មិនមែនក្នុងទំព័រនេះទេ។",
       "color": "#e0332b",
       "icon": "/assets/robux.png",
       "glyph": "R$",
@@ -24,7 +24,7 @@ export default {
       "fields": [
         {
           "key": "user",
-          "label": "Roblox username"
+          "label": "ឈ្មោះអ្នកប្រើ Roblox"
         }
       ],
       "packs": [
@@ -103,9 +103,9 @@ export default {
     {
       "id": "rbx-send",
       "name": "Robux (Send)",
-      "tag": "Send",
-      "sub": "No password needed. You buy a game pass we set up for you.",
-      "note": "We send you a game pass link on Telegram after payment.",
+      "tag": "ផ្ញើ",
+      "sub": "មិនចាំបាច់ប្រើពាក្យសម្ងាត់ទេ។ អ្នកទិញ game pass ដែលយើងរៀបចំឱ្យ។",
+      "note": "យើងនឹងផ្ញើតំណ game pass ទៅអ្នកតាម Telegram បន្ទាប់ពីបង់ប្រាក់។",
       "color": "#c4580a",
       "icon": "/assets/robux.png",
       "glyph": "R$",
@@ -114,7 +114,7 @@ export default {
       "fields": [
         {
           "key": "user",
-          "label": "Roblox username"
+          "label": "ឈ្មោះអ្នកប្រើ Roblox"
         }
       ],
       "packs": [
