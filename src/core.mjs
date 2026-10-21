@@ -143,7 +143,9 @@ async function load() {
 export async function handle(req, env = {}) {
   ENV = env;
   const url = new URL(req.url);
-  const path = url.pathname.replace(/\/+$/, "");
+  let path = url.pathname.replace(/\/+$/, "");
+  // On Vercel, /api/<x> is rewritten to /api?__p=<x>; rebuild the real path from it when needed.
+  if ((path === "/api" || path === "/api/index") && url.searchParams.has("__p")) path = "/api/" + url.searchParams.get("__p");
   const m = req.method;
 
   try {
