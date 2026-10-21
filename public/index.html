@@ -1,0 +1,370 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Minnie Store</title>
+<link rel="icon" href="/assets/minnie-profile.jpg">
+<meta name="theme-color" content="#fff4f8">
+<meta name="description" content="Game top-up and Robux, paid with KHQR.">
+<!-- Fonts are requested only AFTER the page has fully loaded (see script at the bottom), so a slow or blocked
+     font server can never keep the page stuck on "loading". System fonts are used until they arrive. -->
+<style>
+/* Layout: sticky slim header, hero banner, game grid, order panel that opens under the grid, quiet footer. */
+:root{
+  --bg:#fff4f8;
+  --surface:#ffffff;
+  --ink:#4a1f33;
+  --muted:#8a5a70;
+  --line:#f6d3e1;
+  --accent:#c93a76;
+  --accent-ink:#ffffff;
+  --soft:#ffe1ec;
+  --good:#12805c;
+  --warn:#b4540a;
+  --f-display:"Bricolage Grotesque","Noto Sans Khmer",system-ui,sans-serif;
+  --f-body:"DM Sans","Noto Sans Khmer",system-ui,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,monospace;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.5}
+.wrap{max-width:1080px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1,h2,h3{font-family:var(--f-display);margin:0;text-wrap:balance;letter-spacing:-.01em}
+a{color:inherit}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+
+/* header */
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--bg);border-bottom:1px solid var(--line)}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);background:var(--bg);z-index:30}
+.top .wrap{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-block:12px}
+.brand{display:flex;align-items:center;gap:10px;text-decoration:none;font-family:var(--f-display);font-weight:800;font-size:20px;letter-spacing:.01em}
+.mark{width:40px;height:40px;border-radius:50%;object-fit:cover;display:block;border:2px solid var(--line)}
+.pill{display:inline-flex;align-items:center;gap:8px;padding:6px 12px;border:1px solid var(--line);border-radius:99px;background:var(--surface);font-size:13px;white-space:nowrap}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--muted)}
+.pill.open .dot{background:var(--good);box-shadow:0 0 0 3px color-mix(in srgb,var(--good) 25%,transparent)}
+.pill.closed .dot{background:var(--warn)}
+
+/* hero */
+.hero{padding-block:40px 24px}
+.hero .wrap{display:grid;grid-template-columns:1fr;gap:20px}
+.pitch{background:linear-gradient(135deg,#ffd6e6,#ffeef5 60%,#fde4f0);color:var(--ink);border:1px solid var(--line);border-radius:20px;padding:36px;display:flex;flex-direction:column;justify-content:space-between;gap:28px;min-width:0;position:relative;overflow:hidden}
+.pitch h1{font-size:clamp(32px,5vw,52px);line-height:1.02;font-weight:800}
+.pitch p{margin:0;max-width:44ch;opacity:.8}
+.pitch .cta{align-self:flex-start;background:var(--accent);color:var(--accent-ink);text-decoration:none;font-weight:700;padding:12px 20px;border-radius:12px}
+.pitch .avatar{width:min(150px,32vw);aspect-ratio:1;border-radius:50%;object-fit:cover;border:4px solid #fff;box-shadow:0 8px 24px rgba(201,58,118,.25);position:relative;z-index:1}
+.pitch .intro{display:flex;align-items:center;gap:24px;flex-wrap:wrap;position:relative;z-index:1}
+.pitch .intro > div{flex:1 1 260px;display:flex;flex-direction:column;gap:14px}
+.pitch::after{content:"";position:absolute;right:-60px;top:-60px;width:220px;height:220px;border-radius:50%;border:34px solid color-mix(in srgb,var(--accent) 22%,transparent)}
+
+/* games */
+section.block{padding-block:28px}
+.sec-head{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:16px;flex-wrap:wrap}
+.sec-head h2{font-size:28px;font-weight:800}
+.sec-head span{color:var(--muted);font-size:14px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:14px}
+.game{--c:var(--accent);text-align:left;cursor:pointer;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:12px;display:flex;flex-direction:column;gap:12px;min-width:0;transition:transform .15s,border-color .15s}
+.game:hover{transform:translateY(-3px);border-color:var(--c)}
+.game[aria-pressed="true"]{border-color:var(--c);box-shadow:0 0 0 2px var(--c)}
+.art{aspect-ratio:16/10;border-radius:10px;background:var(--soft);display:grid;place-items:center;position:relative;overflow:hidden}
+.art .ico{height:74%;width:auto;max-width:60%;object-fit:contain;display:block}
+.art b{font-family:var(--f-display);font-size:54px;font-weight:800;color:var(--c);line-height:1}
+.art i{position:absolute;left:10px;bottom:8px;font-style:normal;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:3px 8px;border-radius:99px;background:var(--surface);color:var(--ink)}
+.game h3{font-size:17px;font-weight:700;font-family:var(--f-display)}
+.game small{color:var(--muted);font-size:13px;display:block}
+.game .from{font-family:var(--f-mono);font-size:13px;color:var(--ink)}
+
+/* order */
+#order{scroll-margin-top:84px}
+.order{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:24px;display:grid;grid-template-columns:1.5fr 1fr;gap:28px}
+.order > *{min-width:0}
+.order h2{font-size:26px;font-weight:800;margin-bottom:4px}
+.step{margin-top:22px}
+.step h3{font-size:13px;font-family:var(--f-body);text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin-bottom:10px}
+.pkgs{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.pkg{cursor:pointer;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:12px;text-align:left;display:flex;flex-direction:column;gap:2px}
+.pkg[aria-pressed="true"]{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent);background:color-mix(in srgb,var(--accent) 8%,var(--surface))}
+.pkg strong{font-family:var(--f-display);font-size:18px}
+.pkg span{font-family:var(--f-mono);font-size:13px;color:var(--muted)}
+.fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
+label{display:grid;gap:6px;font-size:14px;font-weight:500}
+input{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:11px 12px;width:100%;min-width:0}
+input:focus{border-color:var(--accent)}
+.note{font-size:13px;color:var(--muted);margin:10px 0 0}
+.summary{background:var(--bg);border-radius:16px;padding:20px;align-self:start;display:flex;flex-direction:column;gap:12px}
+.summary h3{font-size:18px}
+.row{display:flex;justify-content:space-between;gap:12px;font-size:14px}
+.row span:first-child{color:var(--muted)}
+.row span:last-child{font-family:var(--f-mono);text-align:right;overflow-wrap:anywhere}
+.total{border-top:1px dashed var(--line);padding-top:12px;font-size:16px}
+.total span:last-child{font-size:24px;font-weight:700}
+.btn{cursor:pointer;border:0;background:var(--accent);color:var(--accent-ink);font-weight:700;padding:13px 18px;border-radius:12px;width:100%}
+.btn[disabled]{opacity:.4;cursor:not-allowed}
+.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+.pay{display:grid;gap:12px;justify-items:center;text-align:center;border-top:1px solid var(--line);padding-top:16px}
+.qr{width:min(280px,100%);aspect-ratio:3/4;border-radius:14px;border:2px dashed var(--line);display:grid;place-items:center;overflow:hidden;background:#fff;color:#555;font-size:13px;padding:14px}
+.qr img{width:100%;height:100%;object-fit:contain;display:block}
+.qr.has{padding:0}
+.code{font-family:var(--f-mono);font-weight:700;font-size:20px;letter-spacing:.06em}
+.msg{font-size:13px;color:var(--good);min-height:1.2em}
+
+/* trust + footer */
+.trust{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
+.trust div{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px}
+.trust h3{font-size:18px;margin-bottom:4px}
+.trust p{margin:0;color:var(--muted);font-size:14px}
+footer{margin-top:28px;border-top:1px solid var(--line);padding-block:28px 40px;font-size:14px;color:var(--muted)}
+footer .wrap{display:flex;flex-wrap:wrap;justify-content:space-between;gap:16px;align-items:center}
+.accept{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.chip{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:8px;padding:5px 10px;font-weight:700;font-size:13px;font-family:var(--f-mono)}
+
+@media (max-width:760px){
+  .hero .wrap,.order{grid-template-columns:1fr}
+  .pitch{padding:26px}
+  .order{padding:18px}
+  .pill.hide-s{display:none}
+}
+@media (prefers-reduced-motion:reduce){.game{transition:none}.game:hover{transform:none}}
+
+
+/* added: loading + sold out */
+.game[disabled]{cursor:not-allowed;opacity:.55}
+.game[disabled]:hover{transform:none;border-color:var(--line)}
+.art i.soldout{background:var(--warn);color:#fff}
+.empty{grid-column:1/-1;color:var(--muted);padding:24px;text-align:center;background:var(--surface);border:1px dashed var(--line);border-radius:16px}
+.pkg[disabled]{opacity:.4}
+
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="#top"><img class="mark" src="/assets/minnie-profile.jpg" alt=""><span id="brandName">MINNIE STORE</span></a>
+    <span class="pill open" id="statusPill"><span class="dot"></span><span id="statusText">Open now</span></span>
+  </div>
+</header>
+
+<main id="top">
+  <section class="hero">
+    <div class="wrap">
+      <div class="pitch">
+        <div class="intro">
+          <img class="avatar" src="/assets/minnie-profile.jpg" alt="Minnie Store profile picture">
+          <div>
+            <h1>Top up your game in minutes.</h1>
+            <p>Pick a game, choose a pack, pay with KHQR from any Cambodian bank app. Prices are listed in US dollars before you pay.</p>
+          </div>
+        </div>
+        <a class="cta" href="#games">Choose a game</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" id="games">
+    <div class="wrap">
+      <div class="sec-head"><h2>All games</h2><span id="count"></span></div>
+      <div class="grid" id="grid"><div class="empty">Loading games…</div></div>
+    </div>
+  </section>
+
+  <section class="block" id="order" hidden>
+    <div class="wrap">
+      <div class="order">
+        <div>
+          <h2 id="oTitle"></h2>
+          <p class="note" id="oSub" style="margin:0"></p>
+          <div class="step"><h3>1. Choose a pack</h3><div class="pkgs" id="pkgs"></div></div>
+          <div class="step"><h3>2. Your details</h3><div class="fields" id="fields"></div><p class="note" id="oNote"></p></div>
+        </div>
+        <div class="summary" aria-live="polite">
+          <h3>Order summary</h3>
+          <div class="row"><span>Game</span><span id="sGame">-</span></div>
+          <div class="row"><span>Pack</span><span id="sPack">-</span></div>
+          <div class="row"><span>Account</span><span id="sAcct">-</span></div>
+          <div class="row total"><span>Total</span><span id="sTotal">$0.00</span></div>
+          <div class="row"><span>In riel</span><span id="sKhr">-</span></div>
+          <button class="btn" id="payBtn" disabled>Pay with KHQR</button>
+          <div class="pay" id="pay" hidden>
+            <div class="qr has" id="qrBox"></div>
+            <div>Pay exactly <b id="payAmt"></b></div>
+            <div>Order code <div class="code" id="code"></div></div>
+            <p class="note" style="margin:0" id="payNote"></p>
+            <a class="btn" id="tgBtn" href="#" target="_blank" rel="noopener" style="text-decoration:none;text-align:center">Send screenshot on Telegram</a>
+            <button class="btn ghost" id="copyBtn" type="button">Copy order details</button>
+            <div class="msg" id="copyMsg"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="wrap">
+      <div class="trust">
+        <div><h3>Fast</h3><p>Orders are handled as soon as your payment is confirmed during opening hours.</p></div>
+        <div><h3>Clear prices</h3><p>You see the total in US dollars before you pay. No hidden fees.</p></div>
+        <div><h3>Pay with KHQR</h3><p>Scan with ABA, ACLEDA, Wing or any bank app that supports KHQR.</p></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div>© 2026 <span id="footName">Minnie Store</span> · Telegram <b id="tgText"></b></div>
+    <div class="accept">We accept <span class="chip">KHQR</span></div>
+  </div>
+</footer>
+
+<script id="default-config" type="application/json">{"version": 1, "settings": {"storeName": "Minnie Store", "telegram": "Lisaa_lisaz", "openHour": 7, "closeHour": 23, "khrRate": 4100, "khqrImage": "/assets/khqr.jpg", "qrAccountName": "SIV NANN"}, "games": [{"id": "rbx-login", "name": "Robux (Login)", "tag": "Login", "sub": "We top up through your Roblox account.", "note": "Login details are shared privately on Telegram after payment, never on this page.", "color": "#e0332b", "icon": "/assets/robux.png", "glyph": "R$", "hidden": false, "soldOut": false, "fields": [{"key": "user", "label": "Roblox username"}], "packs": [{"name": "80 Robux", "usd": 1.0, "khr": 4100}, {"name": "160 Robux", "usd": 1.9, "khr": 7800}, {"name": "240 Robux", "usd": 3.0, "khr": 12300}, {"name": "320 Robux", "usd": 3.8, "khr": 15500}, {"name": "500 Robux", "usd": 4.8, "khr": 19700}, {"name": "660 Robux", "usd": 6.6, "khr": 27000}, {"name": "740 Robux", "usd": 7.4, "khr": 30300}, {"name": "1,000 Robux", "usd": 9.4, "khr": 38500}, {"name": "1,500 Robux", "usd": 14.0, "khr": 57400}, {"name": "2,000 Robux", "usd": 18.0, "khr": 73800}, {"name": "2,500 Robux", "usd": 22.5, "khr": 92200}, {"name": "3,000 Robux", "usd": 27.0, "khr": 110700}, {"name": "5,000 Robux", "usd": 46.0, "khr": 188600}, {"name": "10,000 Robux", "usd": 90.0, "khr": 369000}]}, {"id": "rbx-send", "name": "Robux (Send)", "tag": "Send", "sub": "No password needed. You buy a game pass we set up for you.", "note": "We send you a game pass link on Telegram after payment.", "color": "#c4580a", "icon": "/assets/robux.png", "glyph": "R$", "hidden": false, "soldOut": false, "fields": [{"key": "user", "label": "Roblox username"}], "packs": [{"name": "100 Robux", "usd": 1.0}, {"name": "200 Robux", "usd": 2.0}, {"name": "500 Robux", "usd": 5.0}]}]}</script>
+<script>
+/* The shop's games, prices and settings are edited at /admin. This page loads them from /api/products.
+   If that is slow or unavailable it falls back to the last saved copy, then to the built-in copy below,
+   so the store always opens. */
+var DEFAULT_CFG = JSON.parse(document.getElementById("default-config").textContent);
+var CFG = null;
+
+function $(id){return document.getElementById(id)}
+function money(n){return "$"+Number(n).toFixed(2)}
+function khr(p){var v=p.khr||Math.round(p.usd*CFG.settings.khrRate/100)*100;return v.toLocaleString("en-US")+" \u17DB"}
+function el(tag,cls,text){var e=document.createElement(tag);if(cls)e.className=cls;if(text!=null)e.textContent=text;return e}
+
+/* ---- Shop hours (Phnom Penh time) ---- */
+function tick(){
+  if(!CFG)return;
+  var h=new Date(Date.now()+7*3600*1000).getUTCHours(), s=CFG.settings;
+  var open=h>=s.openHour&&h<s.closeHour;
+  $("statusPill").className="pill "+(open?"open":"closed");
+  var hr=s.openHour, ap=hr>=12?"PM":"AM", h12=hr%12||12;
+  $("statusText").textContent=open?"Open now":"Closed. Opens "+h12+":00 "+ap;
+}
+setInterval(tick,20000);
+
+/* ---- Game grid ---- */
+function renderGrid(){
+  var grid=$("grid");grid.textContent="";
+  var games=CFG.games;
+  $("count").textContent=games.length+(games.length===1?" product":" products");
+  if(!games.length){grid.appendChild(el("div","empty","No games available right now. Please check back soon."));return}
+  games.forEach(function(g){
+    var b=el("button","game");b.type="button";b.dataset.id=g.id;b.setAttribute("aria-pressed",cur&&cur.id===g.id?"true":"false");
+    b.style.setProperty("--c",g.color);
+    if(g.soldOut)b.disabled=true;
+    var art=el("div","art");
+    if(g.icon){var im=el("img","ico");im.alt="";im.src=g.icon;im.loading="lazy";art.appendChild(im)}
+    else art.appendChild(el("b",null,g.glyph||g.name.charAt(0)));
+    if(g.soldOut)art.appendChild(el("i","soldout","Sold out"));
+    else if(g.tag)art.appendChild(el("i",null,g.tag));
+    var info=el("div");info.appendChild(el("h3",null,g.name));
+    if(g.packs.length){
+      var low=Math.min.apply(null,g.packs.map(function(p){return p.usd}));
+      var sm=el("small",null,"from ");sm.appendChild(el("span","from",money(low)));info.appendChild(sm);
+    }
+    b.appendChild(art);b.appendChild(info);
+    b.addEventListener("click",function(){choose(g)});
+    grid.appendChild(b);
+  });
+}
+
+/* ---- Order flow ---- */
+var cur=null, pack=null, vals={}, code="";
+function choose(g){
+  cur=g;pack=null;vals={};code="";
+  document.querySelectorAll(".game").forEach(function(e){e.setAttribute("aria-pressed",e.dataset.id===g.id?"true":"false")});
+  $("order").hidden=false;
+  $("oTitle").textContent=g.name;$("oSub").textContent=g.sub;$("oNote").textContent=g.note;
+  $("pay").hidden=true;$("copyMsg").textContent="";
+  var pk=$("pkgs");pk.textContent="";
+  g.packs.forEach(function(p){
+    var b=el("button","pkg");b.type="button";b.setAttribute("aria-pressed","false");
+    b.appendChild(el("strong",null,p.name));b.appendChild(el("span",null,money(p.usd)+" \u00B7 "+khr(p)));
+    b.addEventListener("click",function(){
+      pack=p;pk.querySelectorAll(".pkg").forEach(function(x){x.setAttribute("aria-pressed","false")});
+      b.setAttribute("aria-pressed","true");$("pay").hidden=true;refresh();
+    });
+    pk.appendChild(b);
+  });
+  var f=$("fields");f.textContent="";
+  g.fields.forEach(function(fl){
+    var l=el("label",null,fl.label);l.setAttribute("for","f-"+fl.key);
+    var inp=el("input");inp.id="f-"+fl.key;inp.autocomplete="off";
+    inp.setAttribute("inputmode",fl.key==="pid"||fl.key==="zone"?"numeric":"text");
+    inp.addEventListener("input",function(e){vals[fl.key]=e.target.value.trim();$("pay").hidden=true;refresh()});
+    l.appendChild(inp);f.appendChild(l);
+  });
+  refresh();
+  $("order").scrollIntoView({behavior:matchMedia("(prefers-reduced-motion:reduce)").matches?"auto":"smooth"});
+}
+function acct(){return cur?cur.fields.map(function(fl){return vals[fl.key]||""}).filter(Boolean).join(" / "):""}
+function ready(){
+  return cur&&pack&&cur.fields.every(function(fl){var n=(vals[fl.key]||"").length;return n>=3||(fl.key==="zone"&&n>=1)});
+}
+function refresh(){
+  $("sGame").textContent=cur?cur.name:"-";
+  $("sPack").textContent=pack?pack.name:"-";
+  $("sAcct").textContent=acct()||"-";
+  $("sTotal").textContent=pack?money(pack.usd):"$0.00";
+  $("sKhr").textContent=pack?khr(pack):"-";
+  $("payBtn").disabled=!ready();
+}
+function summaryText(){
+  return CFG.settings.storeName+" order "+code+"\nGame: "+cur.name+"\nPack: "+pack.name+"\nAccount: "+acct()+"\nTotal: "+money(pack.usd)+" ("+khr(pack)+")";
+}
+$("payBtn").addEventListener("click",function(){
+  if(!ready())return;
+  var chars="ABCDEFGHJKLMNPQRSTUVWXYZ23456789";code="NS-";
+  for(var i=0;i<5;i++)code+=chars[Math.floor(Math.random()*chars.length)];
+  $("code").textContent=code;$("payAmt").textContent=money(pack.usd)+" ("+khr(pack)+")";
+  var q=$("qrBox");q.textContent="";
+  if(CFG.settings.khqrImage){var im=el("img");im.alt="KHQR payment code";im.src=CFG.settings.khqrImage;q.appendChild(im)}
+  var who=CFG.settings.qrAccountName;
+  $("payNote").textContent=(who?"Account name on the QR: "+who+". ":"")+"After paying, send a screenshot of the payment and your order code to Telegram. We top up as soon as it is confirmed.";
+  $("tgBtn").href="https://t.me/"+CFG.settings.telegram;
+  $("pay").hidden=false;$("copyMsg").textContent="";
+  $("pay").scrollIntoView({behavior:"smooth",block:"nearest"});
+});
+$("copyBtn").addEventListener("click",function(){
+  var t=summaryText(),m=$("copyMsg");
+  function ok(){m.textContent="Copied. Paste it in Telegram with your payment screenshot."}
+  function fail(){m.textContent="Copy did not work. Select the details and copy them by hand."}
+  try{navigator.clipboard.writeText(t).then(ok,fail)}catch(e){fail()}
+});
+
+/* ---- Web fonts: added after load so they can never block the page ---- */
+window.addEventListener("load",function(){
+  setTimeout(function(){
+    var l=document.createElement("link");l.rel="stylesheet";
+    l.href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@700;800&family=DM+Sans:wght@400;500;700&family=JetBrains+Mono:wght@400;700&family=Noto+Sans+Khmer:wght@400;700&display=swap";
+    document.head.appendChild(l);
+  },0);
+});
+
+/* ---- Load shop data ---- */
+function apply(cfg){
+  CFG=cfg;var s=cfg.settings;
+  $("brandName").textContent=s.storeName.toUpperCase();$("footName").textContent=s.storeName;
+  $("tgText").textContent="@"+s.telegram;document.title=s.storeName;
+  // if the customer is mid-order and the game changed, keep their selection only if it still exists
+  if(cur){var still=cfg.games.filter(function(g){return g.id===cur.id&&!g.soldOut})[0];if(!still){cur=null;pack=null;$("order").hidden=true}else{cur=still}}
+  renderGrid();tick();
+}
+function saved(){try{return JSON.parse(localStorage.getItem("minnie-cfg"))}catch(e){return null}}
+apply(saved()||DEFAULT_CFG);            // show something immediately
+(function(){
+  var done=false;
+  var ctl=window.AbortController?new AbortController():null;
+  var t=setTimeout(function(){if(ctl)ctl.abort()},6000);
+  fetch("/api/products",{cache:"no-store",signal:ctl?ctl.signal:undefined})
+    .then(function(r){if(!r.ok)throw 0;return r.json()})
+    .then(function(cfg){
+      if(!cfg||!cfg.games||!cfg.settings)throw 0;
+      try{localStorage.setItem("minnie-cfg",JSON.stringify(cfg))}catch(e){}
+      apply(cfg);
+    })
+    .catch(function(){})
+    .then(function(){clearTimeout(t)});
+})();
+</script>
+</body>
+</html>
