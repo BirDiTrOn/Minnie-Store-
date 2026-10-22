@@ -135,6 +135,7 @@ h1,h2,h3{letter-spacing:0;line-height:1.35}
 .art i{letter-spacing:.02em;text-transform:none}
 .pkg span,.row span:last-child,.game .from{font-variant-numeric:tabular-nums}
 .brand{letter-spacing:.02em}
+.pitch p,#payNote,.tx p,.note{white-space:pre-line}
 
 /* ---------- loading / sold out ---------- */
 .game[disabled]{cursor:not-allowed;opacity:.6}
@@ -201,19 +202,19 @@ h1,h2,h3{letter-spacing:0;line-height:1.35}
         <div class="intro">
           <img class="avatar" src="/assets/minnie-profile.jpg" alt="Minnie Store">
           <div>
-            <h1>បញ្ចូលហ្គេមរបស់អ្នក ក្នុងប៉ុន្មាននាទី</h1>
-            <p>ជ្រើសរើសហ្គេម ជ្រើសរើសកញ្ចប់ រួចបង់ប្រាក់តាម KHQR ពីកម្មវិធីធនាគារកម្ពុជាណាមួយ។ តម្លៃបង្ហាញជាដុល្លារអាមេរិកមុនពេលអ្នកបង់។</p>
+            <h1 data-t="heroTitle">បញ្ចូលហ្គេមរបស់អ្នក ក្នុងប៉ុន្មាននាទី</h1>
+            <p data-t="heroText">ជ្រើសរើសហ្គេម ជ្រើសរើសកញ្ចប់ រួចបង់ប្រាក់តាម KHQR ពីកម្មវិធីធនាគារកម្ពុជាណាមួយ។ តម្លៃបង្ហាញជាដុល្លារអាមេរិកមុនពេលអ្នកបង់។</p>
           </div>
         </div>
-        <a class="cta" href="#games">ជ្រើសរើសហ្គេម</a>
+        <a class="cta" href="#games" data-t="heroButton">ជ្រើសរើសហ្គេម</a>
       </div>
     </div>
   </section>
 
   <section class="block" id="games">
     <div class="wrap">
-      <div class="sec-head"><h2>ហ្គេមទាំងអស់</h2><span id="count"></span></div>
-      <div class="grid" id="grid"><div class="empty">កំពុងផ្ទុកហ្គេម…</div></div>
+      <div class="sec-head"><h2 data-t="gamesTitle">ហ្គេមទាំងអស់</h2><span id="count"></span></div>
+      <div class="grid" id="grid"><div class="empty" data-t="loadingText">កំពុងផ្ទុកហ្គេម…</div></div>
     </div>
   </section>
 
@@ -223,24 +224,24 @@ h1,h2,h3{letter-spacing:0;line-height:1.35}
         <div>
           <h2 id="oTitle"></h2>
           <p class="note" id="oSub" style="margin:0"></p>
-          <div class="step"><h3>1. ជ្រើសរើសកញ្ចប់</h3><div class="pkgs" id="pkgs"></div></div>
-          <div class="step"><h3>2. ព័ត៌មានរបស់អ្នក</h3><div class="fields" id="fields"></div><p class="note" id="oNote"></p></div>
+          <div class="step"><h3 data-t="step1Title">1. ជ្រើសរើសកញ្ចប់</h3><div class="pkgs" id="pkgs"></div></div>
+          <div class="step"><h3 data-t="step2Title">2. ព័ត៌មានរបស់អ្នក</h3><div class="fields" id="fields"></div><p class="note" id="oNote"></p></div>
         </div>
         <div class="summary" aria-live="polite">
-          <h3>សង្ខេបការបញ្ជាទិញ</h3>
-          <div class="row"><span>ហ្គេម</span><span id="sGame">-</span></div>
-          <div class="row"><span>កញ្ចប់</span><span id="sPack">-</span></div>
-          <div class="row"><span>គណនី</span><span id="sAcct">-</span></div>
-          <div class="row total"><span>សរុប</span><span id="sTotal">$0.00</span></div>
-          <div class="row"><span>ជាប្រាក់រៀល</span><span id="sKhr">-</span></div>
-          <button class="btn" id="payBtn" disabled>បង់ប្រាក់តាម KHQR</button>
+          <h3 data-t="summaryTitle">សង្ខេបការបញ្ជាទិញ</h3>
+          <div class="row"><span data-t="rowGame">ហ្គេម</span><span id="sGame">-</span></div>
+          <div class="row"><span data-t="rowPack">កញ្ចប់</span><span id="sPack">-</span></div>
+          <div class="row"><span data-t="rowAccount">គណនី</span><span id="sAcct">-</span></div>
+          <div class="row total"><span data-t="rowTotal">សរុប</span><span id="sTotal">$0.00</span></div>
+          <div class="row"><span data-t="rowRiel">ជាប្រាក់រៀល</span><span id="sKhr">-</span></div>
+          <button class="btn" id="payBtn" disabled data-t="payButton">បង់ប្រាក់តាម KHQR</button>
           <div class="pay" id="pay" hidden>
             <div class="qr has" id="qrBox"></div>
-            <div>សូមបង់ចំនួន <b id="payAmt"></b></div>
-            <div>លេខកូដបញ្ជាទិញ <div class="code" id="code"></div></div>
+            <div><span data-t="payExactly">សូមបង់ចំនួន</span> <b id="payAmt"></b></div>
+            <div><span data-t="orderCodeLabel">លេខកូដបញ្ជាទិញ</span> <div class="code" id="code"></div></div>
             <p class="note" style="margin:0" id="payNote"></p>
-            <a class="btn" id="tgBtn" href="#" target="_blank" rel="noopener" style="text-decoration:none;text-align:center">ផ្ញើរូបថតអេក្រង់ទៅ Telegram</a>
-            <button class="btn ghost" id="copyBtn" type="button">ចម្លងព័ត៌មានបញ្ជាទិញ</button>
+            <a class="btn" id="tgBtn" href="#" target="_blank" rel="noopener" style="text-decoration:none;text-align:center" data-t="telegramButton">ផ្ញើរូបថតអេក្រង់ទៅ Telegram</a>
+            <button class="btn ghost" id="copyBtn" type="button" data-t="copyButton">ចម្លងព័ត៌មានបញ្ជាទិញ</button>
             <div class="msg" id="copyMsg"></div>
           </div>
         </div>
@@ -251,9 +252,9 @@ h1,h2,h3{letter-spacing:0;line-height:1.35}
   <section class="block">
     <div class="wrap">
       <div class="trust">
-        <div class="tr"><span class="ti t1"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg></span><div class="tx"><h3>រហ័ស</h3><p>ការបញ្ជាទិញត្រូវបានដំណើរការភ្លាមៗ បន្ទាប់ពីបញ្ជាក់ការបង់ប្រាក់ ក្នុងម៉ោងបើកទ្វារ។</p></div></div>
-        <div class="tr"><span class="ti t2"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg></span><div class="tx"><h3>តម្លៃច្បាស់លាស់</h3><p>អ្នកឃើញតម្លៃសរុបជាដុល្លារមុនពេលបង់ ហើយគ្មានថ្លៃលាក់កំបាំងទេ។</p></div></div>
-        <div class="tr"><span class="ti t3"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6z"/><path d="m9 12 2 2 4-4"/></svg></span><div class="tx"><h3>បង់ប្រាក់តាម KHQR</h3><p>ស្កេនជាមួយ ABA, ACLEDA, Wing ឬកម្មវិធីធនាគារណាដែលគាំទ្រ KHQR។</p></div></div>
+        <div class="tr"><span class="ti t1"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg></span><div class="tx"><h3 data-t="feat1Title">រហ័ស</h3><p data-t="feat1Text">ការបញ្ជាទិញត្រូវបានដំណើរការភ្លាមៗ បន្ទាប់ពីបញ្ជាក់ការបង់ប្រាក់ ក្នុងម៉ោងបើកទ្វារ។</p></div></div>
+        <div class="tr"><span class="ti t2"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg></span><div class="tx"><h3 data-t="feat2Title">តម្លៃច្បាស់លាស់</h3><p data-t="feat2Text">អ្នកឃើញតម្លៃសរុបជាដុល្លារមុនពេលបង់ ហើយគ្មានថ្លៃលាក់កំបាំងទេ។</p></div></div>
+        <div class="tr"><span class="ti t3"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6z"/><path d="m9 12 2 2 4-4"/></svg></span><div class="tx"><h3 data-t="feat3Title">បង់ប្រាក់តាម KHQR</h3><p data-t="feat3Text">ស្កេនជាមួយ ABA, ACLEDA, Wing ឬកម្មវិធីធនាគារណាដែលគាំទ្រ KHQR។</p></div></div>
       </div>
     </div>
   </section>
@@ -261,8 +262,8 @@ h1,h2,h3{letter-spacing:0;line-height:1.35}
 
 <footer>
   <div class="wrap">
-    <div>© 2026 <span id="footName">Minnie Store</span> · Telegram <b id="tgText"></b></div>
-    <div class="accept">យើងទទួលការទូទាត់តាម <span class="chip">KHQR</span></div>
+    <div id="footText">© 2026 {store} · Telegram {telegram}</div>
+    <div class="accept"><span data-t="footerAccept">យើងទទួលការទូទាត់តាម</span> <span class="chip">KHQR</span></div>
   </div>
 </footer>
 
@@ -273,6 +274,9 @@ h1,h2,h3{letter-spacing:0;line-height:1.35}
    so the store always opens. */
 var DEFAULT_CFG = JSON.parse(document.getElementById("default-config").textContent);
 var CFG = null;
+var TD = {"statusOpen": "កំពុងបើក", "statusClosed": "បិទ · បើកម៉ោង {time}", "heroTitle": "បញ្ចូលហ្គេមរបស់អ្នក ក្នុងប៉ុន្មាននាទី", "heroText": "ជ្រើសរើសហ្គេម ជ្រើសរើសកញ្ចប់ រួចបង់ប្រាក់តាម KHQR ពីកម្មវិធីធនាគារកម្ពុជាណាមួយ។ តម្លៃបង្ហាញជាដុល្លារអាមេរិកមុនពេលអ្នកបង់។", "heroButton": "ជ្រើសរើសហ្គេម", "gamesTitle": "ហ្គេមទាំងអស់", "countText": "{n} ផលិតផល", "loadingText": "កំពុងផ្ទុកហ្គេម…", "emptyText": "មិនទាន់មានហ្គេមទេ។ សូមត្រឡប់មកវិញនៅពេលក្រោយ។", "fromLabel": "ចាប់ពី", "cardButton": "បញ្ចូលប្រាក់", "soldOutLabel": "អស់ស្តុក", "step1Title": "1. ជ្រើសរើសកញ្ចប់", "step2Title": "2. ព័ត៌មានរបស់អ្នក", "summaryTitle": "សង្ខេបការបញ្ជាទិញ", "rowGame": "ហ្គេម", "rowPack": "កញ្ចប់", "rowAccount": "គណនី", "rowTotal": "សរុប", "rowRiel": "ជាប្រាក់រៀល", "payButton": "បង់ប្រាក់តាម KHQR", "payExactly": "សូមបង់ចំនួន", "orderCodeLabel": "លេខកូដបញ្ជាទិញ", "payNoteWho": "ឈ្មោះគណនីលើ QR៖ {name}។", "payNote": "បន្ទាប់ពីបង់ប្រាក់ សូមផ្ញើរូបថតអេក្រង់នៃការបង់ប្រាក់ និងលេខកូដបញ្ជាទិញទៅ Telegram។ យើងនឹងបញ្ចូលភ្លាមៗ នៅពេលបញ្ជាក់ការបង់ប្រាក់រួច។", "telegramButton": "ផ្ញើរូបថតអេក្រង់ទៅ Telegram", "copyButton": "ចម្លងព័ត៌មានបញ្ជាទិញ", "copiedMsg": "បានចម្លងហើយ។ សូមបិទភ្ជាប់ក្នុង Telegram រួមជាមួយរូបថតអេក្រង់នៃការបង់ប្រាក់។", "copyFailMsg": "ចម្លងមិនបានទេ។ សូមជ្រើសរើសព័ត៌មាន ហើយចម្លងដោយដៃ។", "msgOrder": "{store} លេខបញ្ជាទិញ {code}", "msgGame": "ហ្គេម", "msgPack": "កញ្ចប់", "msgAccount": "គណនី", "msgTotal": "សរុប", "feat1Title": "រហ័ស", "feat1Text": "ការបញ្ជាទិញត្រូវបានដំណើរការភ្លាមៗ បន្ទាប់ពីបញ្ជាក់ការបង់ប្រាក់ ក្នុងម៉ោងបើកទ្វារ។", "feat2Title": "តម្លៃច្បាស់លាស់", "feat2Text": "អ្នកឃើញតម្លៃសរុបជាដុល្លារមុនពេលបង់ ហើយគ្មានថ្លៃលាក់កំបាំងទេ។", "feat3Title": "បង់ប្រាក់តាម KHQR", "feat3Text": "ស្កេនជាមួយ ABA, ACLEDA, Wing ឬកម្មវិធីធនាគារណាដែលគាំទ្រ KHQR។", "footerText": "© 2026 {store} · Telegram {telegram}", "footerAccept": "យើងទទួលការទូទាត់តាម"};   // built-in (Khmer) wording; your edits from /admin override it
+/* T("key", {name:value}) = your edited text, or the built-in one; {name} placeholders are filled in */
+function T(k,v){var o=(CFG&&CFG.settings&&CFG.settings.texts)||{};var s=o[k]||TD[k]||"";if(v)for(var n in v)s=s.split("{"+n+"}").join(v[n]);return s}
 
 function $(id){return document.getElementById(id)}
 function money(n){return "$"+Number(n).toFixed(2)}
@@ -286,7 +290,7 @@ function tick(){
   var h=new Date(Date.now()+7*3600*1000).getUTCHours(), s=CFG.settings;
   var open=h>=s.openHour&&h<s.closeHour;
   $("statusPill").className="pill "+(open?"open":"closed");
-  $("statusText").textContent=open?"កំពុងបើក":"បិទ · បើកម៉ោង "+two(s.openHour)+":00";
+  $("statusText").textContent=open?T("statusOpen"):T("statusClosed",{time:two(s.openHour)+":00"});
 }
 setInterval(tick,20000);
 
@@ -294,8 +298,8 @@ setInterval(tick,20000);
 function renderGrid(){
   var grid=$("grid");grid.textContent="";
   var games=CFG.games;
-  $("count").textContent=games.length+" ផលិតផល";
-  if(!games.length){grid.appendChild(el("div","empty","មិនទាន់មានហ្គេមទេ។ សូមត្រឡប់មកវិញនៅពេលក្រោយ។"));return}
+  $("count").textContent=T("countText",{n:games.length});
+  if(!games.length){grid.appendChild(el("div","empty",T("emptyText")));return}
   games.forEach(function(g){
     var b=el("button","game");b.type="button";b.dataset.id=g.id;b.setAttribute("aria-pressed",cur&&cur.id===g.id?"true":"false");
     b.style.setProperty("--c",g.color);
@@ -303,15 +307,15 @@ function renderGrid(){
     var art=el("div","art");
     if(g.icon){var im=el("img","ico");im.alt="";im.src=g.icon;im.loading="lazy";art.appendChild(im)}
     else art.appendChild(el("b",null,g.glyph||g.name.charAt(0)));
-    if(g.soldOut)art.appendChild(el("i","soldout","អស់ស្តុក"));
+    if(g.soldOut)art.appendChild(el("i","soldout",T("soldOutLabel")));
     else if(g.tag)art.appendChild(el("i",null,g.tag));
     var info=el("div","gi");info.appendChild(el("h3",null,g.name));
     if(g.packs.length){
       var low=Math.min.apply(null,g.packs.map(function(p){return p.usd}));
-      var sm=el("small",null,"ចាប់ពី ");sm.appendChild(el("span","from",money(low)));info.appendChild(sm);
+      var sm=el("small",null,T("fromLabel")+" ");sm.appendChild(el("span","from",money(low)));info.appendChild(sm);
     }
     b.appendChild(art);b.appendChild(info);
-    b.appendChild(el("span","go",g.soldOut?"អស់ស្តុក":"បញ្ចូលប្រាក់"));
+    b.appendChild(el("span","go",g.soldOut?T("soldOutLabel"):T("cardButton")));
     b.addEventListener("click",function(){choose(g)});
     grid.appendChild(b);
   });
@@ -359,7 +363,7 @@ function refresh(){
   $("payBtn").disabled=!ready();
 }
 function summaryText(){
-  return CFG.settings.storeName+" លេខបញ្ជាទិញ "+code+"\nហ្គេម: "+cur.name+"\nកញ្ចប់: "+pack.name+"\nគណនី: "+acct()+"\nសរុប: "+money(pack.usd)+" ("+khr(pack)+")";
+  return T("msgOrder",{store:CFG.settings.storeName,code:code})+"\n"+T("msgGame")+": "+cur.name+"\n"+T("msgPack")+": "+pack.name+"\n"+T("msgAccount")+": "+acct()+"\n"+T("msgTotal")+": "+money(pack.usd)+" ("+khr(pack)+")";
 }
 $("payBtn").addEventListener("click",function(){
   if(!ready())return;
@@ -369,23 +373,24 @@ $("payBtn").addEventListener("click",function(){
   var q=$("qrBox");q.textContent="";
   if(CFG.settings.khqrImage){var im=el("img");im.alt="KHQR";im.src=CFG.settings.khqrImage;q.appendChild(im)}
   var who=CFG.settings.qrAccountName;
-  $("payNote").textContent=(who?"ឈ្មោះគណនីលើ QR៖ "+who+"។ ":"")+"បន្ទាប់ពីបង់ប្រាក់ សូមផ្ញើរូបថតអេក្រង់នៃការបង់ប្រាក់ និងលេខកូដបញ្ជាទិញទៅ Telegram។ យើងនឹងបញ្ចូលភ្លាមៗ នៅពេលបញ្ជាក់ការបង់ប្រាក់រួច។";
+  $("payNote").textContent=(who?T("payNoteWho",{name:who})+" ":"")+T("payNote");
   $("tgBtn").href="https://t.me/"+CFG.settings.telegram;
   $("pay").hidden=false;$("copyMsg").textContent="";
   $("pay").scrollIntoView({behavior:"smooth",block:"nearest"});
 });
 $("copyBtn").addEventListener("click",function(){
   var t=summaryText(),m=$("copyMsg");
-  function ok(){m.textContent="បានចម្លងហើយ។ សូមបិទភ្ជាប់ក្នុង Telegram រួមជាមួយរូបថតអេក្រង់នៃការបង់ប្រាក់។"}
-  function fail(){m.textContent="ចម្លងមិនបានទេ។ សូមជ្រើសរើសព័ត៌មាន ហើយចម្លងដោយដៃ។"}
+  function ok(){m.textContent=T("copiedMsg")}
+  function fail(){m.textContent=T("copyFailMsg")}
   try{navigator.clipboard.writeText(t).then(ok,fail)}catch(e){fail()}
 });
 
 /* ---- Load shop data ---- */
 function apply(cfg){
   CFG=cfg;var s=cfg.settings;
-  $("brandName").textContent=s.storeName.toUpperCase();$("footName").textContent=s.storeName;
-  $("tgText").textContent="@"+s.telegram;document.title=s.storeName;
+  $("brandName").textContent=s.storeName.toUpperCase();document.title=s.storeName;
+  document.querySelectorAll("[data-t]").forEach(function(e){e.textContent=T(e.dataset.t)});
+  $("footText").textContent=T("footerText",{store:s.storeName,telegram:"@"+s.telegram});
   // if the customer is mid-order and the game changed, keep their selection only if it still exists
   if(cur){var still=cfg.games.filter(function(g){return g.id===cur.id&&!g.soldOut})[0];if(!still){cur=null;pack=null;$("order").hidden=true}else{cur=still}}
   renderGrid();tick();

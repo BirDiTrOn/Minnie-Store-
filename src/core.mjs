@@ -1,4 +1,5 @@
 import DEFAULT_CONFIG from "./default-config.mjs";
+import TEXT_KEYS from "./texts.mjs";
 
 const TOKEN_TTL_MS = 12 * 60 * 60 * 1000;
 const MAX_GAMES = 100, MAX_PACKS = 300, MAX_IMG_BYTES = 600 * 1024;
@@ -98,7 +99,11 @@ function clean(input) {
     khrRate: Math.round(num(s.khrRate, 1, 100000, 4100)),
     khqrImage: imgUrl(s.khqrImage),
     qrAccountName: str(s.qrAccountName, 60),
+    texts: {},
   };
+  // Editable store wording: keep only known keys; an empty value means "use the built-in text"
+  const tin = s.texts && typeof s.texts === "object" ? s.texts : {};
+  for (const k of TEXT_KEYS) { const v = str(tin[k], 600); if (v) settings.texts[k] = v; }
   const used = new Set();
   const games = input.games.map((g, i) => {
     let id = slug(g.id || g.name, "game-" + (i + 1));

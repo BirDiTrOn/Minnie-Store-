@@ -7,10 +7,12 @@
 <meta name="theme-color" content="#fff4f8">
 <title>Minnie Store Admin</title>
 <style>
+@font-face{font-family:"Kantumruy Pro";font-style:normal;font-display:swap;font-weight:100 700;src:url(/fonts/kantumruy-pro-khmer-wght-normal.woff2) format("woff2-variations");unicode-range:U+1780-17FF,U+19E0-19FF,U+200C-200D,U+25CC}
+@font-face{font-family:"Kantumruy Pro";font-style:normal;font-display:swap;font-weight:100 700;src:url(/fonts/kantumruy-pro-latin-wght-normal.woff2) format("woff2-variations");unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
 :root{
   --bg:#fff4f8;--surface:#fff;--ink:#4a1f33;--muted:#8a5a70;--line:#f6d3e1;--accent:#c93a76;--soft:#ffe1ec;
   --good:#12805c;--warn:#b4540a;--bad:#b3261e;color-scheme:light;
-  --f:system-ui,-apple-system,"Segoe UI","Noto Sans Khmer",Roboto,sans-serif;
+  --f:"Kantumruy Pro",system-ui,-apple-system,"Segoe UI","Noto Sans Khmer",Roboto,sans-serif;
 }
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 var(--f);-webkit-text-size-adjust:100%}
@@ -39,6 +41,11 @@ textarea{resize:vertical;min-height:80px}
 label{display:grid;gap:5px;font-size:14px;font-weight:600}
 label small{font-weight:400;color:var(--muted)}
 .hint{font-size:13px;color:var(--muted);margin:4px 0 0}
+.tgroup{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:22px 0 10px}
+.tgroup:first-child{margin-top:0}
+.trow{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:end;margin-bottom:12px}
+.trow textarea{min-height:76px}
+.trow input,.trow textarea{font-size:16px}
 
 /* login */
 .login{max-width:380px;margin:12vh auto 0;background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:26px;display:grid;gap:14px}
@@ -114,6 +121,7 @@ input[type=color]{padding:2px;height:42px;width:64px}
     <div class="tabs" role="tablist">
       <button class="tab" role="tab" data-tab="games" aria-selected="true">Games</button>
       <button class="tab" role="tab" data-tab="settings" aria-selected="false">Settings</button>
+      <button class="tab" role="tab" data-tab="texts" aria-selected="false">Texts</button>
     </div>
 
     <section id="tabGames">
@@ -143,6 +151,12 @@ input[type=color]{padding:2px;height:42px;width:64px}
         </div>
       </div>
       <p class="hint">To change the admin password, open Vercel → your project → Settings → Environment Variables → edit <b>ADMIN_PASSWORD</b>, then redeploy.</p>
+    </section>
+
+    <section id="tabTexts" hidden>
+      <p class="hint" style="margin:0 0 14px">Change any wording on the store page. A box left as it is keeps the built-in Khmer text. Press ↺ to go back to the built-in text. Keep words in {curly brackets}, such as {n} or {store}, because the store fills them in. Press <b>Save</b> when done.</p>
+      <div class="card" id="textsBox"></div>
+      <p style="margin-top:14px"><button class="btn ghost small" id="resetTexts" type="button">Reset ALL texts to built-in</button></p>
     </section>
   </main>
 </div>
@@ -247,8 +261,8 @@ $("logoutBtn").addEventListener("click",function(){
 });
 
 function start(){
-  return api("/api/admin/products").then(function(c){
-    cfg=normalize(c);$("loginView").hidden=true;$("appView").hidden=false;setDirty(false);renderAll();
+  return Promise.all([api("/api/admin/products"),loadDefs()]).then(function(r){
+    cfg=normalize(r[0]);$("loginView").hidden=true;$("appView").hidden=false;setDirty(false);renderAll();
   });
 }
 
@@ -258,6 +272,7 @@ function normalize(c){
     g.packs=g.packs.map(function(p){return {name:p.name,usd:String(p.usd),khr:p.khr?String(p.khr):""}});
     g.fields=g.fields||[];
   });
+  c.settings.texts=c.settings.texts||{};
   return c;
 }
 function serialize(){
@@ -268,7 +283,7 @@ function serialize(){
 function money(v){return "$"+(parseFloat(v)||0).toFixed(2)}
 
 /* ---------- render ---------- */
-function renderAll(){renderGames();renderSettings()}
+function renderAll(){renderGames();renderSettings();renderTexts()}
 function iconHtml(g){return g.icon?'<img alt="" src="'+esc(g.icon)+'">':'<span style="color:'+esc(g.color)+'">'+esc(g.glyph||g.name.charAt(0))+'</span>'}
 function renderGames(){
   var box=$("glist");
@@ -308,10 +323,45 @@ SKEYS.forEach(function(k){$("s_"+k).addEventListener("input",function(e){
   var v=e.target.value;cfg.settings[k]=e.target.type==="number"?(v===""?"":Number(v)):v;setDirty(true);
 })});
 
+/* ---------- editable store texts ---------- */
+var TDEFS=[];
+function loadDefs(){
+  return fetch("/texts.json",{cache:"no-store"}).then(function(r){return r.json()}).then(function(d){TDEFS=d}).catch(function(){TDEFS=[]});
+}
+function renderTexts(){
+  var box=$("textsBox"),tx=cfg.settings.texts;
+  if(!TDEFS.length){box.innerHTML='<p class="hint">Could not load the list of texts. Reload the page.</p>';return}
+  var html="",last="";
+  TDEFS.forEach(function(d){
+    if(d.group!==last){html+='<h3 class="tgroup">'+esc(d.group)+'</h3>';last=d.group}
+    var val=tx[d.key]!=null?tx[d.key]:d.default;
+    html+='<div class="trow"><label>'+esc(d.label)+(d.hint?' <small>— '+esc(d.hint)+'</small>':'')+
+      (d.multiline?'<textarea data-tk="'+d.key+'" maxlength="600">'+esc(val)+'</textarea>':'<input data-tk="'+d.key+'" maxlength="600" value="'+esc(val)+'">')+
+      '</label><button class="btn ghost small" type="button" data-treset="'+d.key+'" title="Back to built-in text" aria-label="Back to built-in text">↺</button></div>';
+  });
+  box.innerHTML=html;
+}
+function tdef(k){for(var i=0;i<TDEFS.length;i++)if(TDEFS[i].key===k)return TDEFS[i];return null}
+$("textsBox").addEventListener("input",function(e){
+  var k=e.target.dataset.tk;if(!k)return;var d=tdef(k),v=e.target.value;
+  if(!v.trim()||v===d.default)delete cfg.settings.texts[k];else cfg.settings.texts[k]=v;
+  setDirty(true);
+});
+$("textsBox").addEventListener("click",function(e){
+  var b=e.target.closest("[data-treset]");if(!b)return;
+  var k=b.dataset.treset,d=tdef(k);delete cfg.settings.texts[k];
+  var f=$("textsBox").querySelector('[data-tk="'+k+'"]');if(f)f.value=d.default;
+  setDirty(true);
+});
+$("resetTexts").addEventListener("click",function(){
+  if(!confirm("Put ALL store texts back to the built-in Khmer wording? (Press Save afterwards to apply.)"))return;
+  cfg.settings.texts={};setDirty(true);renderTexts();
+});
+
 /* ---------- tabs ---------- */
 document.querySelectorAll(".tab").forEach(function(t){t.addEventListener("click",function(){
   document.querySelectorAll(".tab").forEach(function(x){x.setAttribute("aria-selected",x===t?"true":"false")});
-  $("tabGames").hidden=t.dataset.tab!=="games";$("tabSettings").hidden=t.dataset.tab!=="settings";
+  $("tabGames").hidden=t.dataset.tab!=="games";$("tabSettings").hidden=t.dataset.tab!=="settings";$("tabTexts").hidden=t.dataset.tab!=="texts";
 })});
 
 /* ---------- image upload (resized in the browser first) ---------- */
