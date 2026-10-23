@@ -6,7 +6,7 @@ export default {
     "openHour": 7,
     "closeHour": 23,
     "khrRate": 4100,
-    "khqrImage": "/assets/khqr.jpg",
+    "qrCodes": [{ "usd": "", "image": "/assets/khqr.jpg" }],
     "qrAccountName": "SIV NANN"
   },
   "games": [

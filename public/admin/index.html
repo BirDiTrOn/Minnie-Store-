@@ -61,6 +61,7 @@ label small{font-weight:400;color:var(--muted)}
 .card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px}
 .glist{display:grid;gap:10px}
 .grow{display:flex;gap:12px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:10px 12px}
+.qrow{display:flex;gap:10px;align-items:center;background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:10px}
 .grow.off{opacity:.65}
 .gico{width:52px;height:52px;border-radius:10px;background:var(--soft);display:grid;place-items:center;flex:none;overflow:hidden;font-weight:800}
 .gico img{width:100%;height:100%;object-fit:contain}
@@ -140,15 +141,14 @@ input[type=color]{padding:2px;height:42px;width:64px}
           <label>Riel per US dollar<input id="s_khrRate" type="number" min="1" step="1" inputmode="numeric"></label>
           <label>Account name shown under the QR<input id="s_qrAccountName" maxlength="60"></label>
         </div>
-        <div>
-          <b style="font-size:14px">KHQR image</b>
-          <div class="iconrow" style="margin-top:8px">
-            <div class="gico" style="width:90px;height:120px;background:#fff;border:1px solid var(--line)"><img id="khqrPrev" alt=""></div>
-            <div><button class="btn ghost small" id="khqrBtn" type="button">Upload new KHQR</button>
-              <input type="file" id="khqrFile" accept="image/png,image/jpeg,image/webp" hidden>
-              <p class="hint">Customers scan this to pay. Double-check it after changing.</p></div>
-          </div>
-        </div>
+      </div>
+      <div class="card stack" style="margin-top:14px">
+        <b style="font-size:15px">KHQR codes by price</b>
+        <p class="hint" style="margin:0">Add one QR for each price (US dollars). When a customer orders, the store shows the QR that matches their total. A row with the price left <b>empty</b> is used for any price that has no QR of its own.</p>
+        <div id="qrList" class="stack"></div>
+        <p id="qrMissing" class="hint" style="margin:0"></p>
+        <div><button class="btn ghost small" id="qrAdd" type="button">+ Add QR</button>
+          <input type="file" id="qrFile" accept="image/png,image/jpeg,image/webp" hidden></div>
       </div>
       <p class="hint">To change the admin password, open Vercel → your project → Settings → Environment Variables → edit <b>ADMIN_PASSWORD</b>, then redeploy.</p>
     </section>
@@ -273,6 +273,8 @@ function normalize(c){
     g.fields=g.fields||[];
   });
   c.settings.texts=c.settings.texts||{};
+  if(!Array.isArray(c.settings.qrCodes))c.settings.qrCodes=c.settings.khqrImage?[{usd:"",image:c.settings.khqrImage}]:[];
+  delete c.settings.khqrImage;
   return c;
 }
 function serialize(){
@@ -317,7 +319,7 @@ $("addGame").addEventListener("click",function(){
 var SKEYS=["storeName","telegram","openHour","closeHour","khrRate","qrAccountName"];
 function renderSettings(){
   SKEYS.forEach(function(k){$("s_"+k).value=cfg.settings[k]==null?"":cfg.settings[k]});
-  $("khqrPrev").src=cfg.settings.khqrImage||"";
+  renderQr();
 }
 SKEYS.forEach(function(k){$("s_"+k).addEventListener("input",function(e){
   var v=e.target.value;cfg.settings[k]=e.target.type==="number"?(v===""?"":Number(v)):v;setDirty(true);
@@ -384,10 +386,44 @@ function pickAndUpload(fileInput,maxDim){
     img.onerror=function(){reject(new Error("Could not read that image"))};img.src=u;
   });
 }
-$("khqrBtn").addEventListener("click",function(){$("khqrFile").click()});
-$("khqrFile").addEventListener("change",function(){
-  pickAndUpload($("khqrFile"),1000).then(function(url){cfg.settings.khqrImage=url;$("khqrPrev").src=url;setDirty(true);toast("KHQR image ready. Press Save.")})
-  .catch(function(e){if(e.message!=="none"&&e.message!=="auth")toast(e.message,true)});
+/* ---------- QR codes by price ---------- */
+var qrTarget=-1;
+function renderQr(){
+  var L=cfg.settings.qrCodes,box=$("qrList");
+  box.innerHTML=L.length?"":'<p class="hint" style="margin:0">No QR yet. Press + Add QR.</p>';
+  L.forEach(function(q,i){
+    var r=document.createElement("div");r.className="qrow";r.dataset.i=i;
+    r.innerHTML='<div class="gico" style="width:56px;height:74px;background:#fff;border:1px solid var(--line);flex:none"><img alt="" style="width:100%;height:100%;object-fit:contain"></div>'+
+      '<label style="flex:1;min-width:0">Price (USD)<input data-q="usd" type="number" min="0" step="0.01" inputmode="decimal" placeholder="empty = any other price"></label>'+
+      '<button class="btn ghost small" data-q="swap" type="button">Change</button>'+
+      '<button class="btn ghost small" data-q="del" type="button" aria-label="Remove">✕</button>';
+    r.querySelector("img").src=q.image;r.querySelector("input").value=q.usd===""?"":q.usd;
+    box.appendChild(r);
+  });
+  renderQr2();
+}
+$("qrList").addEventListener("input",function(e){
+  var r=e.target.closest(".qrow");if(!r||e.target.dataset.q!=="usd")return;
+  cfg.settings.qrCodes[+r.dataset.i].usd=e.target.value===""?"":Number(e.target.value);setDirty(true);renderQr2();
+});
+function renderQr2(){ /* refresh only the hint so typing is not interrupted */
+  var L=cfg.settings.qrCodes,have={};L.forEach(function(q){if(q.usd!=="")have[Number(q.usd).toFixed(2)]=1});
+  var hasAny=L.some(function(q){return q.usd===""}),miss={};
+  cfg.games.forEach(function(g){g.packs.forEach(function(p){var k=Number(p.usd).toFixed(2);if(p.usd!==""&&!have[k])miss[k]=1})});
+  var m=Object.keys(miss).sort(function(a,b){return a-b});
+  $("qrMissing").textContent=m.length&&!hasAny?"No QR yet for: $"+m.join(", $")+". Those orders will show no QR.":m.length?"These prices use the 'any other price' QR: $"+m.join(", $"):"Every price in your games has its own QR.";
+}
+$("qrList").addEventListener("click",function(e){
+  var b=e.target.closest("button[data-q]");if(!b)return;var i=+b.closest(".qrow").dataset.i;
+  if(b.dataset.q==="del"){cfg.settings.qrCodes.splice(i,1);setDirty(true);renderQr()}
+  else{qrTarget=i;$("qrFile").click()}
+});
+$("qrAdd").addEventListener("click",function(){qrTarget=-1;$("qrFile").click()});
+$("qrFile").addEventListener("change",function(){
+  pickAndUpload($("qrFile"),1000).then(function(url){
+    if(qrTarget>=0)cfg.settings.qrCodes[qrTarget].image=url;else cfg.settings.qrCodes.push({usd:"",image:url});
+    setDirty(true);renderQr();toast("QR ready. Set its price, then press Save.");
+  }).catch(function(e){if(e.message!=="none"&&e.message!=="auth")toast(e.message,true)});
 });
 
 /* ---------- game editor ---------- */

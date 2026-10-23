@@ -97,10 +97,17 @@ function clean(input) {
     openHour: Math.round(num(s.openHour, 0, 23, 7)),
     closeHour: Math.round(num(s.closeHour, 1, 24, 23)),
     khrRate: Math.round(num(s.khrRate, 1, 100000, 4100)),
-    khqrImage: imgUrl(s.khqrImage),
     qrAccountName: str(s.qrAccountName, 60),
     texts: {},
   };
+  // One QR per price. usd empty = used for any price that has no QR of its own.
+  const qin = Array.isArray(s.qrCodes) ? s.qrCodes : (imgUrl(s.khqrImage) ? [{ usd: "", image: s.khqrImage }] : []);
+  settings.qrCodes = qin.slice(0, 80).map((q) => {
+    const image = imgUrl(q && q.image);
+    const raw = q && q.usd;
+    const has = raw !== "" && raw != null && Number.isFinite(Number(raw));
+    return { usd: has ? Math.round(num(raw, 0, 100000, 0) * 100) / 100 : "", image };
+  }).filter((q) => q.image);
   // Editable store wording: keep only known keys; an empty value means "use the built-in text"
   const tin = s.texts && typeof s.texts === "object" ? s.texts : {};
   for (const k of TEXT_KEYS) { const v = str(tin[k], 600); if (v) settings.texts[k] = v; }
