@@ -140,15 +140,13 @@ input[type=color]{padding:2px;height:42px;width:64px}
           <label>Opens at <small>hour, 0–23 (Phnom Penh time)</small><input id="s_openHour" type="number" min="0" max="23"></label>
           <label>Closes at <small>hour, 1–24</small><input id="s_closeHour" type="number" min="1" max="24"></label>
           <label>Riel per US dollar<input id="s_khrRate" type="number" min="1" step="1" inputmode="numeric"></label>
-          <label>Account name shown under the QR<input id="s_qrAccountName" maxlength="60"></label>
         </div>
       </div>
       <div class="card stack" style="margin-top:14px">
         <b style="font-size:15px">Payment link for each price</b>
-        <p class="hint" style="margin:0">Every price from your games is listed below. Paste that price's payment link next to it (a link made for exactly that amount). When a customer pays, the store opens the link for their total in the same window. You can instead upload a QR image for a price, and it pops up on the store page.</p>
+        <p class="hint" style="margin:0">Every price from your games is listed below. Paste that price's payment link next to it (a link made for exactly that amount). When a customer presses pay, the store opens the link for their total in the same window.</p>
         <div id="qrList" class="stack"></div>
         <p id="qrMissing" class="hint" style="margin:0"></p>
-        <input type="file" id="qrFile" accept="image/png,image/jpeg,image/webp" hidden>
       </div>
       <div class="card stack" style="margin-top:14px">
         <b style="font-size:15px">Telegram order alerts</b>
@@ -278,7 +276,7 @@ function normalize(c){
     g.fields=g.fields||[];
   });
   c.settings.texts=c.settings.texts||{};
-  if(!Array.isArray(c.settings.qrCodes))c.settings.qrCodes=c.settings.khqrImage?[{usd:"",image:c.settings.khqrImage}]:[];
+  c.settings.qrCodes=(Array.isArray(c.settings.qrCodes)?c.settings.qrCodes:[]).filter(function(q){return q.link}).map(function(q){return {usd:q.usd,link:q.link}});
   delete c.settings.khqrImage;
   return c;
 }
@@ -321,7 +319,7 @@ $("addGame").addEventListener("click",function(){
 });
 
 /* ---------- settings ---------- */
-var SKEYS=["storeName","telegram","openHour","closeHour","khrRate","qrAccountName"];
+var SKEYS=["storeName","telegram","openHour","closeHour","khrRate"];
 function renderSettings(){
   SKEYS.forEach(function(k){$("s_"+k).value=cfg.settings[k]==null?"":cfg.settings[k]});
   renderQr();
@@ -394,51 +392,39 @@ function pickAndUpload(fileInput,maxDim){
 /* ---------- payment links by price ---------- */
 function pkey(v){var n=Number(v);return (v===""||v==null||!isFinite(n))?"":n.toFixed(2)}
 function qrFind(key){var L=cfg.settings.qrCodes;for(var i=0;i<L.length;i++){if(pkey(L[i].usd)===key)return L[i]}return null}
-function qrEnsure(key){var e=qrFind(key);if(!e){e={usd:key===""?"":Number(key),link:"",image:""};cfg.settings.qrCodes.push(e)}return e}
+function qrEnsure(key){var e=qrFind(key);if(!e){e={usd:Number(key),link:""};cfg.settings.qrCodes.push(e)}return e}
 function usedPrices(){
   var seen={};cfg.games.forEach(function(g){g.packs.forEach(function(p){var k=pkey(p.usd);if(k!==""&&Number(k)>0)seen[k]=1})});
   return Object.keys(seen).sort(function(a,b){return a-b});
 }
-function qrRow(key,title,note,linkAllowed){
-  var e=qrFind(key)||{link:"",image:""};
-  var r=document.createElement("div");r.className="qrow";r.dataset.k=key;r.style.flexWrap="wrap";
+function qrRow(key){
+  var e=qrFind(key)||{link:""};
+  var r=document.createElement("div");r.className="qrow";r.dataset.k=key;
   r.innerHTML='<div style="width:78px;font-weight:700;font-size:16px;flex:none"></div>'+
-    (linkAllowed?'<label style="flex:1;min-width:150px;margin:0"><span class="sr">Payment link</span><input data-q="link" type="url" inputmode="url" autocapitalize="off" placeholder="Paste payment link https://..."></label>':'<div style="flex:1;min-width:150px;font-size:13px;color:var(--muted)"></div>')+
-    '<div class="gico" style="width:40px;height:52px;background:#fff;border:1px solid var(--line);flex:none"><img alt="" style="width:100%;height:100%;object-fit:contain"></div>'+
-    '<button class="btn ghost small" data-q="img" type="button">'+(e.image?"Change QR":"Upload QR")+'</button>'+
+    '<label style="flex:1;min-width:0;margin:0"><span class="sr">Payment link</span><input data-q="link" type="url" inputmode="url" autocapitalize="off" placeholder="Paste payment link https://..."></label>'+
     '<button class="btn ghost small" data-q="del" type="button" aria-label="Clear">✕</button>';
-  r.firstChild.textContent=title;
-  if(linkAllowed)r.querySelector("[data-q=link]").value=e.link||"";else r.children[1].textContent=note;
-  var im=r.querySelector("img");if(e.image)im.src=e.image;else im.parentNode.style.display="none";
+  r.firstChild.textContent="$"+key;r.querySelector("[data-q=link]").value=e.link||"";
   return r;
 }
 function renderQr(){
   var box=$("qrList");box.textContent="";var prices=usedPrices();
-  prices.forEach(function(k){box.appendChild(qrRow(k,"$"+k,"",true))});
+  prices.forEach(function(k){box.appendChild(qrRow(k))});
   if(!prices.length)box.innerHTML='<p class="hint" style="margin:0">Add games with prices first.</p>';
-  cfg.settings.qrCodes.forEach(function(q){var k=pkey(q.usd);if(k!==""&&prices.indexOf(k)<0&&(q.link||q.image))box.appendChild(qrRow(k,"$"+k,"",true))});
-  var d=document.createElement("div");d.innerHTML='<p class="hint" style="margin:10px 0 6px"><b>Any other price</b>: a QR image used only when a price has no link and no QR of its own.</p>';
-  box.appendChild(d);box.appendChild(qrRow("","Default","QR image for all other prices",false));
+  cfg.settings.qrCodes.forEach(function(q){var k=pkey(q.usd);if(k!==""&&prices.indexOf(k)<0&&q.link)box.appendChild(qrRow(k))});
   renderQr2();
 }
 function renderQr2(){ /* refresh only the hint so typing is not interrupted */
-  var def=qrFind(""),hasDef=!!(def&&def.image),miss=usedPrices().filter(function(k){var e=qrFind(k);return !(e&&(e.link||e.image))});
-  $("qrMissing").textContent=miss.length?(hasDef?"These prices have no link yet and will show the default QR: $":"These prices have no link or QR yet: $")+miss.join(", $"):"Every price has its own link or QR.";
+  var miss=usedPrices().filter(function(k){var e=qrFind(k);return !(e&&e.link)});
+  $("qrMissing").textContent=miss.length?"No link yet for: $"+miss.join(", $"):"Every price has its own link.";
 }
 $("qrList").addEventListener("input",function(e){
   var r=e.target.closest(".qrow");if(!r||e.target.dataset.q!=="link")return;
   qrEnsure(r.dataset.k).link=e.target.value.trim();setDirty(true);renderQr2();
 });
-var qrKey=null;
 $("qrList").addEventListener("click",function(e){
-  var b=e.target.closest("button[data-q]");if(!b)return;var k=b.closest(".qrow").dataset.k;
-  if(b.dataset.q==="del"){var L=cfg.settings.qrCodes;for(var i=L.length-1;i>=0;i--){if(pkey(L[i].usd)===k)L.splice(i,1)}setDirty(true);renderQr()}
-  else{qrKey=k;$("qrFile").click()}
-});
-$("qrFile").addEventListener("change",function(){
-  pickAndUpload($("qrFile"),1000).then(function(url){
-    qrEnsure(qrKey).image=url;setDirty(true);renderQr();toast("QR ready. Press Save.");
-  }).catch(function(e){if(e.message!=="none"&&e.message!=="auth")toast(e.message,true)});
+  var b=e.target.closest("button[data-q=del]");if(!b)return;var k=b.closest(".qrow").dataset.k,L=cfg.settings.qrCodes;
+  for(var i=L.length-1;i>=0;i--){if(pkey(L[i].usd)===k)L.splice(i,1)}
+  setDirty(true);renderQr();
 });
 
 $("tgTest").addEventListener("click",function(){

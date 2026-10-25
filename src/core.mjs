@@ -100,19 +100,13 @@ function clean(input) {
     qrAccountName: str(s.qrAccountName, 60),
     texts: {},
   };
-  // One payment link per price. usd empty = used for any price that has no link of its own.
-  // (Older saved QR images keep working until they are replaced by a link.)
+  // One payment link per price (only https links are kept).
   const link = (v) => { const t = str(v, 500); return /^https:\/\/[^\s<>"']+$/i.test(t) ? t : ""; };
-  const qin = Array.isArray(s.qrCodes) ? s.qrCodes : (imgUrl(s.khqrImage) ? [{ usd: "", image: s.khqrImage }] : []);
-  settings.qrCodes = qin.slice(0, 80).map((q) => {
+  settings.qrCodes = (Array.isArray(s.qrCodes) ? s.qrCodes : []).slice(0, 80).map((q) => {
     const raw = q && q.usd;
     const has = raw !== "" && raw != null && Number.isFinite(Number(raw));
-    const out = { usd: has ? Math.round(num(raw, 0, 100000, 0) * 100) / 100 : "" };
-    const l = link(q && q.link), im = imgUrl(q && q.image);
-    if (l) out.link = l;
-    if (im) out.image = im;
-    return out;
-  }).filter((q) => q.link || q.image);
+    return { usd: has ? Math.round(num(raw, 0, 100000, 0) * 100) / 100 : "", link: link(q && q.link) };
+  }).filter((q) => q.link && q.usd !== "");
   // Editable store wording: keep only known keys; an empty value means "use the built-in text"
   const tin = s.texts && typeof s.texts === "object" ? s.texts : {};
   for (const k of TEXT_KEYS) { const v = str(tin[k], 600); if (v) settings.texts[k] = v; }
