@@ -156,6 +156,30 @@ async function load() {
   return (await sbGetConfig()) || DEFAULT_CONFIG;
 }
 
+/* ---------- Telegram notifications (bot token + chat id live in environment variables) ---------- */
+const tgReady = () => !!(ENV.TELEGRAM_BOT_TOKEN && ENV.TELEGRAM_CHAT_ID);
+async function tgSend(text) {
+  if (!tgReady()) return { sent: false, error: "Telegram is not set up on the server (TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID)." };
+  const api = (ENV.TELEGRAM_API || "https://api.telegram.org").replace(/\/+$/, "");
+  const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), 6000);
+  try {
+    const r = await fetch(api + "/bot" + ENV.TELEGRAM_BOT_TOKEN + "/sendMessage", {
+      method: "POST", headers: { "content-type": "application/json" }, signal: ctl.signal,
+      body: JSON.stringify({ chat_id: ENV.TELEGRAM_CHAT_ID, text: String(text).slice(0, 3500), disable_web_page_preview: true }),
+    });
+    const d = await r.json().catch(() => ({}));
+    return d.ok ? { sent: true } : { sent: false, error: "Telegram said: " + str(d.description || ("HTTP " + r.status), 200) };
+  } catch (e) { return { sent: false, error: "Could not reach Telegram." }; }
+  finally { clearTimeout(t); }
+}
+const seen = new Map();   // best-effort rate limit + duplicate guard (per server instance)
+function throttled(key, limit, ms) {
+  const now = Date.now(); const a = (seen.get(key) || []).filter((x) => now - x < ms);
+  a.push(now); seen.set(key, a);
+  if (seen.size > 5000) for (const [k, v] of seen) if (!v.some((x) => now - x < ms)) seen.delete(k);
+  return a.length > limit;
+}
+
 /* ---------- router ---------- */
 export async function handle(req, env = {}) {
   ENV = env;
@@ -179,8 +203,31 @@ export async function handle(req, env = {}) {
         adminPasswordSet: !!env.ADMIN_PASSWORD,
         supabaseUrlSet: !!env.SUPABASE_URL,
         supabaseKeySet: !!env.SUPABASE_SERVICE_KEY,
-        settingNamesSeen: Object.keys(env).filter((k) => /admin|supabase/i.test(k)).map((k) => JSON.stringify(k)),
+        telegramBotTokenSet: !!env.TELEGRAM_BOT_TOKEN,
+        telegramChatIdSet: !!env.TELEGRAM_CHAT_ID,
+        settingNamesSeen: Object.keys(env).filter((k) => /admin|supabase|telegram/i.test(k)).map((k) => JSON.stringify(k)),
       });
+    }
+
+    // Public: tell the shop owner (Telegram) about an order. Price and names come from OUR data, not the browser.
+    if (path === "/api/order" && m === "POST") {
+      const body = await req.json().catch(() => ({}));
+      const ip = (req.headers.get("x-forwarded-for") || "").split(",")[0].trim() || "x";
+      if (throttled("ip:" + ip, 20, 60000)) return json({ error: "Too many requests" }, 429);
+      const event = body.event === "paid" ? "paid" : "new";
+      const code = str(body.code, 12);
+      if (!/^NS-[A-Z0-9]{5}$/.test(code)) return json({ error: "Bad order code" }, 400);
+      if (throttled("ev:" + event + code, 1, 3600000)) return json({ ok: true, sent: false, duplicate: true });
+      const cfg = await load();
+      const g = cfg.games.find((x) => x.id === str(body.game, 60));
+      const p = g && g.packs[Math.floor(Number(body.pack))];
+      if (!g || !p) return json({ error: "Unknown item" }, 400);
+      const khr = p.khr || Math.round((p.usd * cfg.settings.khrRate) / 100) * 100;
+      const text = (event === "paid" ? "✅ CUSTOMER SAYS THEY PAID\nPlease check your bank app before delivering.\n\n" : "🛒 New order (customer opened the payment pop-up)\n\n") +
+        "Order: " + code + "\nGame: " + g.name + "\nPack: " + p.name + "\nAccount: " + (str(body.account, 120) || "-") +
+        "\nTotal: $" + p.usd.toFixed(2) + " (" + khr.toLocaleString("en-US") + " ៛)";
+      const r = await tgSend(text);
+      return json({ ok: true, sent: r.sent });
     }
 
     if (path === "/api/login" && m === "POST") {
@@ -204,6 +251,10 @@ export async function handle(req, env = {}) {
     if (path.startsWith("/api/admin/")) {
       if (!(await checkToken(req, env))) return json({ error: "Please log in again" }, 401);
 
+      if (path === "/api/admin/telegram-test" && m === "POST") {
+        const r = await tgSend("✅ Test message from your Minnie Store admin. Order alerts will arrive in this chat.");
+        return json(r, r.sent ? 200 : 502);
+      }
       if (path === "/api/admin/products" && m === "GET") return json(await load());
 
       if (path === "/api/admin/products" && m === "PUT") {

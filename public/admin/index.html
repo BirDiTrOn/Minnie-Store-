@@ -61,6 +61,7 @@ label small{font-weight:400;color:var(--muted)}
 .card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px}
 .glist{display:grid;gap:10px}
 .grow{display:flex;gap:12px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:10px 12px}
+.sr{position:absolute;left:-9999px}
 .qrow{display:flex;gap:10px;align-items:center;background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:10px}
 .grow.off{opacity:.65}
 .gico{width:52px;height:52px;border-radius:10px;background:var(--soft);display:grid;place-items:center;flex:none;overflow:hidden;font-weight:800}
@@ -143,12 +144,16 @@ input[type=color]{padding:2px;height:42px;width:64px}
         </div>
       </div>
       <div class="card stack" style="margin-top:14px">
-        <b style="font-size:15px">Payment QR by price</b>
-        <p class="hint" style="margin:0">Add one row for each price (US dollars) and upload its KHQR image. When a customer presses pay, the QR for their total pops up on the store page. A row with the price left <b>empty</b> is used for any price that has no QR of its own. A payment link is optional: it is only used when a row has a link but no QR image, and then the customer is sent to that page.</p>
+        <b style="font-size:15px">Payment link for each price</b>
+        <p class="hint" style="margin:0">Every price from your games is listed below. Paste that price's payment link next to it (a link made for exactly that amount). When a customer pays, the store opens the link for their total in the same window. You can instead upload a QR image for a price, and it pops up on the store page.</p>
         <div id="qrList" class="stack"></div>
         <p id="qrMissing" class="hint" style="margin:0"></p>
-        <div><button class="btn ghost small" id="qrAdd" type="button">+ Add price</button>
-          <input type="file" id="qrFile" accept="image/png,image/jpeg,image/webp" hidden></div>
+        <input type="file" id="qrFile" accept="image/png,image/jpeg,image/webp" hidden>
+      </div>
+      <div class="card stack" style="margin-top:14px">
+        <b style="font-size:15px">Telegram order alerts</b>
+        <p class="hint" style="margin:0">The store sends a message to your Telegram chat when someone opens the payment pop-up and when they press "I have paid". Set it up in Vercel (see README), then press the button to check.</p>
+        <div><button class="btn ghost small" id="tgTest" type="button">Send test message</button></div>
       </div>
       <p class="hint">To change the admin password, open Vercel → your project → Settings → Environment Variables → edit <b>ADMIN_PASSWORD</b>, then redeploy.</p>
     </section>
@@ -387,47 +392,60 @@ function pickAndUpload(fileInput,maxDim){
   });
 }
 /* ---------- payment links by price ---------- */
+function pkey(v){var n=Number(v);return (v===""||v==null||!isFinite(n))?"":n.toFixed(2)}
+function qrFind(key){var L=cfg.settings.qrCodes;for(var i=0;i<L.length;i++){if(pkey(L[i].usd)===key)return L[i]}return null}
+function qrEnsure(key){var e=qrFind(key);if(!e){e={usd:key===""?"":Number(key),link:"",image:""};cfg.settings.qrCodes.push(e)}return e}
+function usedPrices(){
+  var seen={};cfg.games.forEach(function(g){g.packs.forEach(function(p){var k=pkey(p.usd);if(k!==""&&Number(k)>0)seen[k]=1})});
+  return Object.keys(seen).sort(function(a,b){return a-b});
+}
+function qrRow(key,title,note,linkAllowed){
+  var e=qrFind(key)||{link:"",image:""};
+  var r=document.createElement("div");r.className="qrow";r.dataset.k=key;r.style.flexWrap="wrap";
+  r.innerHTML='<div style="width:78px;font-weight:700;font-size:16px;flex:none"></div>'+
+    (linkAllowed?'<label style="flex:1;min-width:150px;margin:0"><span class="sr">Payment link</span><input data-q="link" type="url" inputmode="url" autocapitalize="off" placeholder="Paste payment link https://..."></label>':'<div style="flex:1;min-width:150px;font-size:13px;color:var(--muted)"></div>')+
+    '<div class="gico" style="width:40px;height:52px;background:#fff;border:1px solid var(--line);flex:none"><img alt="" style="width:100%;height:100%;object-fit:contain"></div>'+
+    '<button class="btn ghost small" data-q="img" type="button">'+(e.image?"Change QR":"Upload QR")+'</button>'+
+    '<button class="btn ghost small" data-q="del" type="button" aria-label="Clear">✕</button>';
+  r.firstChild.textContent=title;
+  if(linkAllowed)r.querySelector("[data-q=link]").value=e.link||"";else r.children[1].textContent=note;
+  var im=r.querySelector("img");if(e.image)im.src=e.image;else im.parentNode.style.display="none";
+  return r;
+}
 function renderQr(){
-  var L=cfg.settings.qrCodes,box=$("qrList");
-  box.innerHTML=L.length?"":'<p class="hint" style="margin:0">Nothing yet. Press + Add price.</p>';
-  L.forEach(function(q,i){
-    var r=document.createElement("div");r.className="qrow";r.dataset.i=i;r.style.flexWrap="wrap";
-    r.innerHTML='<div class="gico" style="width:56px;height:74px;background:#fff;border:1px solid var(--line);flex:none"><img alt="" style="width:100%;height:100%;object-fit:contain"></div>'+
-      '<label style="width:100px">Price (USD)<input data-q="usd" type="number" min="0" step="0.01" inputmode="decimal" placeholder="any"></label>'+
-      '<button class="btn ghost small" data-q="img" type="button">'+(q.image?"Change QR":"Upload QR")+'</button>'+
-      '<button class="btn ghost small" data-q="del" type="button" aria-label="Remove">✕</button>'+
-      '<label style="flex-basis:100%">Payment link <small>optional</small><input data-q="link" type="url" inputmode="url" autocapitalize="off" placeholder="https://..."></label>';
-    var im=r.querySelector("img");if(q.image)im.src=q.image;else im.style.display="none";
-    r.querySelector('[data-q=usd]').value=q.usd===""?"":q.usd;r.querySelector('[data-q=link]').value=q.link||"";
-    box.appendChild(r);
-  });
+  var box=$("qrList");box.textContent="";var prices=usedPrices();
+  prices.forEach(function(k){box.appendChild(qrRow(k,"$"+k,"",true))});
+  if(!prices.length)box.innerHTML='<p class="hint" style="margin:0">Add games with prices first.</p>';
+  cfg.settings.qrCodes.forEach(function(q){var k=pkey(q.usd);if(k!==""&&prices.indexOf(k)<0&&(q.link||q.image))box.appendChild(qrRow(k,"$"+k,"",true))});
+  var d=document.createElement("div");d.innerHTML='<p class="hint" style="margin:10px 0 6px"><b>Any other price</b>: a QR image used only when a price has no link and no QR of its own.</p>';
+  box.appendChild(d);box.appendChild(qrRow("","Default","QR image for all other prices",false));
   renderQr2();
 }
 function renderQr2(){ /* refresh only the hint so typing is not interrupted */
-  var L=cfg.settings.qrCodes,have={};L.forEach(function(q){if(q.usd!=="")have[Number(q.usd).toFixed(2)]=1});
-  var hasAny=L.some(function(q){return q.usd===""}),miss={};
-  cfg.games.forEach(function(g){g.packs.forEach(function(p){var k=Number(p.usd).toFixed(2);if(p.usd!==""&&!have[k])miss[k]=1})});
-  var m=Object.keys(miss).sort(function(a,b){return a-b});
-  $("qrMissing").textContent=m.length&&!hasAny?"No QR yet for: $"+m.join(", $")+". Those orders will show no QR.":m.length?"These prices use the 'any other price' QR: $"+m.join(", $"):"Every price in your games has its own QR.";
+  var def=qrFind(""),hasDef=!!(def&&def.image),miss=usedPrices().filter(function(k){var e=qrFind(k);return !(e&&(e.link||e.image))});
+  $("qrMissing").textContent=miss.length?(hasDef?"These prices have no link yet and will show the default QR: $":"These prices have no link or QR yet: $")+miss.join(", $"):"Every price has its own link or QR.";
 }
 $("qrList").addEventListener("input",function(e){
-  var r=e.target.closest(".qrow"),k=e.target.dataset.q;if(!r||(k!=="usd"&&k!=="link"))return;
-  var q=cfg.settings.qrCodes[+r.dataset.i];
-  if(k==="usd")q.usd=e.target.value===""?"":Number(e.target.value);else q.link=e.target.value.trim();
-  setDirty(true);renderQr2();
+  var r=e.target.closest(".qrow");if(!r||e.target.dataset.q!=="link")return;
+  qrEnsure(r.dataset.k).link=e.target.value.trim();setDirty(true);renderQr2();
 });
-var qrTarget=-1;
+var qrKey=null;
 $("qrList").addEventListener("click",function(e){
-  var b=e.target.closest("button[data-q]");if(!b)return;var i=+b.closest(".qrow").dataset.i;
-  if(b.dataset.q==="del"){cfg.settings.qrCodes.splice(i,1);setDirty(true);renderQr()}
-  else{qrTarget=i;$("qrFile").click()}
+  var b=e.target.closest("button[data-q]");if(!b)return;var k=b.closest(".qrow").dataset.k;
+  if(b.dataset.q==="del"){var L=cfg.settings.qrCodes;for(var i=L.length-1;i>=0;i--){if(pkey(L[i].usd)===k)L.splice(i,1)}setDirty(true);renderQr()}
+  else{qrKey=k;$("qrFile").click()}
 });
-$("qrAdd").addEventListener("click",function(){qrTarget=-1;$("qrFile").click()});
 $("qrFile").addEventListener("change",function(){
   pickAndUpload($("qrFile"),1000).then(function(url){
-    if(qrTarget>=0)cfg.settings.qrCodes[qrTarget].image=url;else cfg.settings.qrCodes.push({usd:"",link:"",image:url});
-    setDirty(true);renderQr();toast("QR ready. Set its price, then press Save.");
+    qrEnsure(qrKey).image=url;setDirty(true);renderQr();toast("QR ready. Press Save.");
   }).catch(function(e){if(e.message!=="none"&&e.message!=="auth")toast(e.message,true)});
+});
+
+$("tgTest").addEventListener("click",function(){
+  var b=this;b.disabled=true;
+  fetch("/api/admin/telegram-test",{method:"POST",headers:{Authorization:"Bearer "+token}}).then(function(r){return r.json()})
+    .then(function(d){toast(d.sent?"Test message sent. Check your Telegram chat.":(d.error||"Could not send."),!d.sent)})
+    .catch(function(){toast("Could not send.",true)}).then(function(){b.disabled=false});
 });
 
 /* ---------- game editor ---------- */
@@ -497,7 +515,7 @@ $("sheet").addEventListener("click",function(e){if(e.target===$("sheet"))closeEd
 document.addEventListener("keydown",function(e){if(e.key==="Escape"&&editing)closeEditor()});
 $("e_delete").addEventListener("click",function(){
   if(!confirm("Delete “"+editing.draft.name+"”? This cannot be undone after you save."))return;
-  cfg.games.splice(editing.idx,1);setDirty(true);closeEditor();renderGames();
+  cfg.games.splice(editing.idx,1);setDirty(true);closeEditor();renderGames();renderQr();
 });
 $("e_ok").addEventListener("click",function(){
   readBasic();var d=editing.draft;
@@ -510,7 +528,7 @@ $("e_ok").addEventListener("click",function(){
   });
   if(!d.id)d.id=d.name.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"")||("game-"+Date.now());
   if(editing.isNew)cfg.games.push(d);else cfg.games[editing.idx]=d;
-  setDirty(true);closeEditor();renderGames();
+  setDirty(true);closeEditor();renderGames();renderQr();
 });
 
 /* ---------- save ---------- */

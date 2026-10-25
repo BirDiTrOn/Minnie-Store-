@@ -8,4 +8,4 @@ Game top-up store, paid with KHQR. Hosted on Vercel, data in Supabase.
 - `vercel.json` — output folder, caching and privacy headers
 
 Environment variables (set in Vercel, never in this repo):
-`ADMIN_PASSWORD`, `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`
+`ADMIN_PASSWORD`, `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`, and for Telegram order alerts `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`
