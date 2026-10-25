@@ -143,12 +143,11 @@ input[type=color]{padding:2px;height:42px;width:64px}
         </div>
       </div>
       <div class="card stack" style="margin-top:14px">
-        <b style="font-size:15px">KHQR codes by price</b>
-        <p class="hint" style="margin:0">Add one QR for each price (US dollars). When a customer orders, the store shows the QR that matches their total. A row with the price left <b>empty</b> is used for any price that has no QR of its own.</p>
+        <b style="font-size:15px">Payment links by price</b>
+        <p class="hint" style="margin:0">Add one payment link for each price (US dollars). When a customer orders, the store shows a pay button that opens the link matching their total. A row with the price left <b>empty</b> is used for any price that has no link of its own.</p>
         <div id="qrList" class="stack"></div>
         <p id="qrMissing" class="hint" style="margin:0"></p>
-        <div><button class="btn ghost small" id="qrAdd" type="button">+ Add QR</button>
-          <input type="file" id="qrFile" accept="image/png,image/jpeg,image/webp" hidden></div>
+        <div><button class="btn ghost small" id="qrAdd" type="button">+ Add link</button></div>
       </div>
       <p class="hint">To change the admin password, open Vercel → your project → Settings → Environment Variables → edit <b>ADMIN_PASSWORD</b>, then redeploy.</p>
     </section>
@@ -386,45 +385,40 @@ function pickAndUpload(fileInput,maxDim){
     img.onerror=function(){reject(new Error("Could not read that image"))};img.src=u;
   });
 }
-/* ---------- QR codes by price ---------- */
-var qrTarget=-1;
+/* ---------- payment links by price ---------- */
 function renderQr(){
   var L=cfg.settings.qrCodes,box=$("qrList");
-  box.innerHTML=L.length?"":'<p class="hint" style="margin:0">No QR yet. Press + Add QR.</p>';
+  box.innerHTML=L.length?"":'<p class="hint" style="margin:0">No link yet. Press + Add link.</p>';
   L.forEach(function(q,i){
-    var r=document.createElement("div");r.className="qrow";r.dataset.i=i;
-    r.innerHTML='<div class="gico" style="width:56px;height:74px;background:#fff;border:1px solid var(--line);flex:none"><img alt="" style="width:100%;height:100%;object-fit:contain"></div>'+
-      '<label style="flex:1;min-width:0">Price (USD)<input data-q="usd" type="number" min="0" step="0.01" inputmode="decimal" placeholder="empty = any other price"></label>'+
-      '<button class="btn ghost small" data-q="swap" type="button">Change</button>'+
+    var r=document.createElement("div");r.className="qrow";r.dataset.i=i;r.style.flexWrap="wrap";
+    r.innerHTML=(q.image&&!q.link?'<div class="gico" style="width:44px;height:58px;background:#fff;border:1px solid var(--line);flex:none"><img alt="old QR" style="width:100%;height:100%;object-fit:contain"></div>':'')+
+      '<label style="width:110px">Price (USD)<input data-q="usd" type="number" min="0" step="0.01" inputmode="decimal" placeholder="any"></label>'+
+      '<label style="flex:1;min-width:180px">Payment link<input data-q="link" type="url" inputmode="url" autocapitalize="off" placeholder="https://..."></label>'+
       '<button class="btn ghost small" data-q="del" type="button" aria-label="Remove">✕</button>';
-    r.querySelector("img").src=q.image;r.querySelector("input").value=q.usd===""?"":q.usd;
+    var im=r.querySelector("img");if(im)im.src=q.image;
+    r.querySelector('[data-q=usd]').value=q.usd===""?"":q.usd;r.querySelector('[data-q=link]').value=q.link||"";
     box.appendChild(r);
   });
   renderQr2();
 }
-$("qrList").addEventListener("input",function(e){
-  var r=e.target.closest(".qrow");if(!r||e.target.dataset.q!=="usd")return;
-  cfg.settings.qrCodes[+r.dataset.i].usd=e.target.value===""?"":Number(e.target.value);setDirty(true);renderQr2();
-});
 function renderQr2(){ /* refresh only the hint so typing is not interrupted */
   var L=cfg.settings.qrCodes,have={};L.forEach(function(q){if(q.usd!=="")have[Number(q.usd).toFixed(2)]=1});
   var hasAny=L.some(function(q){return q.usd===""}),miss={};
   cfg.games.forEach(function(g){g.packs.forEach(function(p){var k=Number(p.usd).toFixed(2);if(p.usd!==""&&!have[k])miss[k]=1})});
   var m=Object.keys(miss).sort(function(a,b){return a-b});
-  $("qrMissing").textContent=m.length&&!hasAny?"No QR yet for: $"+m.join(", $")+". Those orders will show no QR.":m.length?"These prices use the 'any other price' QR: $"+m.join(", $"):"Every price in your games has its own QR.";
+  $("qrMissing").textContent=m.length&&!hasAny?"No link yet for: $"+m.join(", $")+". Those orders will show no way to pay.":m.length?"These prices use the 'any other price' link: $"+m.join(", $"):"Every price in your games has its own link.";
 }
+$("qrList").addEventListener("input",function(e){
+  var r=e.target.closest(".qrow"),k=e.target.dataset.q;if(!r||(k!=="usd"&&k!=="link"))return;
+  var q=cfg.settings.qrCodes[+r.dataset.i];
+  if(k==="usd")q.usd=e.target.value===""?"":Number(e.target.value);else q.link=e.target.value.trim();
+  setDirty(true);renderQr2();
+});
 $("qrList").addEventListener("click",function(e){
-  var b=e.target.closest("button[data-q]");if(!b)return;var i=+b.closest(".qrow").dataset.i;
-  if(b.dataset.q==="del"){cfg.settings.qrCodes.splice(i,1);setDirty(true);renderQr()}
-  else{qrTarget=i;$("qrFile").click()}
+  var b=e.target.closest("button[data-q=del]");if(!b)return;
+  cfg.settings.qrCodes.splice(+b.closest(".qrow").dataset.i,1);setDirty(true);renderQr();
 });
-$("qrAdd").addEventListener("click",function(){qrTarget=-1;$("qrFile").click()});
-$("qrFile").addEventListener("change",function(){
-  pickAndUpload($("qrFile"),1000).then(function(url){
-    if(qrTarget>=0)cfg.settings.qrCodes[qrTarget].image=url;else cfg.settings.qrCodes.push({usd:"",image:url});
-    setDirty(true);renderQr();toast("QR ready. Set its price, then press Save.");
-  }).catch(function(e){if(e.message!=="none"&&e.message!=="auth")toast(e.message,true)});
-});
+$("qrAdd").addEventListener("click",function(){cfg.settings.qrCodes.push({usd:"",link:""});setDirty(true);renderQr()});
 
 /* ---------- game editor ---------- */
 function openEditor(idx,isNew,draft){
@@ -511,6 +505,8 @@ $("e_ok").addEventListener("click",function(){
 
 /* ---------- save ---------- */
 $("saveBtn").addEventListener("click",function(){
+  var bad=cfg.settings.qrCodes.filter(function(q){return q.link&&!/^https:\/\/\S+$/i.test(q.link)});
+  if(bad.length){toast("Payment links must start with https://",true);return}
   var b=$("saveBtn");b.disabled=true;b.textContent="Saving…";
   api("/api/admin/products",{method:"PUT",headers:{"content-type":"application/json"},body:JSON.stringify(serialize())})
     .then(function(d){cfg=normalize(d.config);setDirty(false);renderAll();toast("Saved. The store is updated.")})
