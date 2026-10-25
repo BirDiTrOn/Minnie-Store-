@@ -391,8 +391,8 @@ $("payBtn").addEventListener("click",function(){
   qs.forEach(function(x){if(x.usd===""||x.usd==null){if(!qd)qd=x}else if(Math.abs(Number(x.usd)-pack.usd)<0.005&&!qm){qm=x}});
   var qp=qm||qd;
   var pl=$("payLink");pl.hidden=true;q.hidden=false;
-  if(qp&&qp.link){pl.href=qp.link;pl.hidden=false;q.hidden=true}
-  else if(qp&&qp.image){var im=el("img");im.alt="KHQR";im.src=qp.image;q.appendChild(im)}
+  if(qp&&qp.link){location.href=qp.link;return}   // payment page opens right here, in the same window
+  if(qp&&qp.image){var im=el("img");im.alt="KHQR";im.src=qp.image;q.appendChild(im)}
   else q.hidden=true;
   var who=(qp&&qp.image)?CFG.settings.qrAccountName:"";
   $("payNote").textContent=(who?T("payNoteWho",{name:who})+" ":"")+T("payNote");
