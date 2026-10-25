@@ -110,7 +110,7 @@ function clean(input) {
     const out = { usd: has ? Math.round(num(raw, 0, 100000, 0) * 100) / 100 : "" };
     const l = link(q && q.link), im = imgUrl(q && q.image);
     if (l) out.link = l;
-    if (im && !l) out.image = im;
+    if (im) out.image = im;
     return out;
   }).filter((q) => q.link || q.image);
   // Editable store wording: keep only known keys; an empty value means "use the built-in text"
