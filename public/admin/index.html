@@ -151,7 +151,9 @@ input[type=color]{padding:2px;height:42px;width:64px}
       <div class="card stack" style="margin-top:14px">
         <b style="font-size:15px">Telegram order alerts</b>
         <p class="hint" style="margin:0">The store sends a message to your Telegram chat when someone opens the payment pop-up and when they press "I have paid". Set it up in Vercel (see README), then press the button to check.</p>
-        <div><button class="btn ghost small" id="tgTest" type="button">Send test message</button></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn ghost small" id="tgTest" type="button">Send test message</button>
+          <button class="btn ghost small" id="tgHook" type="button">Turn on ✅ / ❌ buttons</button></div>
+        <p class="hint" style="margin:0">Orders show <b>⏳ PENDING</b> first. When a customer presses "I have paid", the message gets <b>✅ Payment received</b> and <b>❌ Not received</b> buttons. Tap one in Telegram and the message changes to <b>PAID: COMPLETE</b> or <b>NOT RECEIVED</b>. Press "Turn on" once (and again if you change your domain). For customer login, tell BotFather your site: send <code>/setdomain</code>, choose your bot, and enter your store's domain (for example minnietopup.vercel.app).</p>
       </div>
       <p class="hint">To change the admin password, open Vercel → your project → Settings → Environment Variables → edit <b>ADMIN_PASSWORD</b>, then redeploy.</p>
     </section>
@@ -427,6 +429,12 @@ $("qrList").addEventListener("click",function(e){
   setDirty(true);renderQr();
 });
 
+$("tgHook").addEventListener("click",function(){
+  var b=this;b.disabled=true;
+  fetch("/api/admin/telegram-webhook",{method:"POST",headers:{Authorization:"Bearer "+token}}).then(function(r){return r.json()})
+    .then(function(d){toast(d.sent?"Buttons are on. New 'I have paid' messages will have them.":(d.error||"Could not turn on."),!d.sent)})
+    .catch(function(){toast("Could not turn on.",true)}).then(function(){b.disabled=false});
+});
 $("tgTest").addEventListener("click",function(){
   var b=this;b.disabled=true;
   fetch("/api/admin/telegram-test",{method:"POST",headers:{Authorization:"Bearer "+token}}).then(function(r){return r.json()})

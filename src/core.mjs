@@ -152,20 +152,54 @@ async function load() {
 
 /* ---------- Telegram notifications (bot token + chat id live in environment variables) ---------- */
 const tgReady = () => !!(ENV.TELEGRAM_BOT_TOKEN && ENV.TELEGRAM_CHAT_ID);
-async function tgSend(text) {
+async function tgCall(method, payload) {
   if (!tgReady()) return { sent: false, error: "Telegram is not set up on the server (TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID)." };
   const api = (ENV.TELEGRAM_API || "https://api.telegram.org").replace(/\/+$/, "");
   const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), 6000);
   try {
-    const r = await fetch(api + "/bot" + ENV.TELEGRAM_BOT_TOKEN + "/sendMessage", {
-      method: "POST", headers: { "content-type": "application/json" }, signal: ctl.signal,
-      body: JSON.stringify({ chat_id: ENV.TELEGRAM_CHAT_ID, text: String(text).slice(0, 3500), disable_web_page_preview: true }),
+    const r = await fetch(api + "/bot" + ENV.TELEGRAM_BOT_TOKEN + "/" + method, {
+      method: "POST", headers: { "content-type": "application/json" }, signal: ctl.signal, body: JSON.stringify(payload),
     });
     const d = await r.json().catch(() => ({}));
     return d.ok ? { sent: true } : { sent: false, error: "Telegram said: " + str(d.description || ("HTTP " + r.status), 200) };
   } catch (e) { return { sent: false, error: "Could not reach Telegram." }; }
   finally { clearTimeout(t); }
 }
+const tgSend = (text, markup) => tgCall("sendMessage", { chat_id: ENV.TELEGRAM_CHAT_ID, text: String(text).slice(0, 3500), disable_web_page_preview: true, ...(markup ? { reply_markup: markup } : {}) });
+const tgSecret = async (env) => b64url(await hmac(await secret(env), "tg-webhook")).slice(0, 40);
+/* ---- customer login with Telegram (Login Widget): signed proof from Telegram -> our own 30-day customer token ---- */
+let botNameCache = "";
+async function botUsername() {
+  if (ENV.TELEGRAM_BOT_USERNAME) return String(ENV.TELEGRAM_BOT_USERNAME).replace(/^@/, "");
+  if (botNameCache || !ENV.TELEGRAM_BOT_TOKEN) return botNameCache;
+  try {
+    const api = (ENV.TELEGRAM_API || "https://api.telegram.org").replace(/\/+$/, "");
+    const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), 3000);
+    const d = await fetch(api + "/bot" + ENV.TELEGRAM_BOT_TOKEN + "/getMe", { signal: ctl.signal }).then((r) => r.json()); clearTimeout(t);
+    if (d && d.ok && d.result && d.result.username) botNameCache = d.result.username;
+  } catch (e) {}
+  return botNameCache;
+}
+const custKey = async (env) => new Uint8Array(await hmac(await secret(env), "customer-v1"));
+async function makeCustToken(env, u) {
+  const payload = b64url(enc.encode(JSON.stringify({ exp: Date.now() + 30 * 86400000, id: u.id, name: u.name, un: u.un })));
+  return payload + "." + b64url(await hmac(await custKey(env), payload));
+}
+async function readCustToken(env, t) {
+  const [payload, sig] = String(t || "").split(".");
+  if (!payload || !sig || !env.ADMIN_PASSWORD) return null;
+  if (!(await safeEq(b64url(await hmac(await custKey(env), payload)), sig))) return null;
+  try { const o = JSON.parse(new TextDecoder().decode(unb64url(payload))); return o.exp > Date.now() ? o : null; } catch (e) { return null; }
+}
+async function verifyTelegramLogin(env, d) {
+  if (!d || typeof d !== "object" || !env.TELEGRAM_BOT_TOKEN || !d.hash || !d.id) return false;
+  const check = Object.keys(d).filter((k) => k !== "hash").sort().map((k) => k + "=" + d[k]).join("\n");
+  const key = new Uint8Array(await crypto.subtle.digest("SHA-256", enc.encode(env.TELEGRAM_BOT_TOKEN)));
+  const mac = Array.from(new Uint8Array(await hmac(key, check)), (b) => b.toString(16).padStart(2, "0")).join("");
+  if (!(await safeEq(mac, String(d.hash).toLowerCase()))) return false;
+  return Date.now() / 1000 - Number(d.auth_date) < 86400;
+}
+const custLine = (c) => c ? "Telegram: " + (c.un ? "@" + c.un : c.name) + (c.un ? " (" + c.name + ")" : "") + " · id " + c.id : "Telegram: not logged in";
 const seen = new Map();   // best-effort rate limit + duplicate guard (per server instance)
 function throttled(key, limit, ms) {
   const now = Date.now(); const a = (seen.get(key) || []).filter((x) => now - x < ms);
@@ -187,7 +221,7 @@ export async function handle(req, env = {}) {
     // Public: what the storefront shows (hidden games removed)
     if (path === "/api/products" && m === "GET") {
       const cfg = await load();
-      return json({ ...cfg, games: cfg.games.filter((g) => !g.hidden) });
+      return json({ ...cfg, games: cfg.games.filter((g) => !g.hidden), loginBot: await botUsername() });
     }
 
     // Safe diagnostics: says only whether settings are present (never their values)
@@ -199,6 +233,7 @@ export async function handle(req, env = {}) {
         supabaseKeySet: !!env.SUPABASE_SERVICE_KEY,
         telegramBotTokenSet: !!env.TELEGRAM_BOT_TOKEN,
         telegramChatIdSet: !!env.TELEGRAM_CHAT_ID,
+        telegramLoginBot: await botUsername(),
         settingNamesSeen: Object.keys(env).filter((k) => /admin|supabase|telegram/i.test(k)).map((k) => JSON.stringify(k)),
       });
     }
@@ -217,11 +252,41 @@ export async function handle(req, env = {}) {
       const p = g && g.packs[Math.floor(Number(body.pack))];
       if (!g || !p) return json({ error: "Unknown item" }, 400);
       const khr = p.khr || Math.round((p.usd * cfg.settings.khrRate) / 100) * 100;
-      const text = (event === "paid" ? "✅ CUSTOMER SAYS THEY PAID\nPlease check your bank app before delivering.\n\n" : "🛒 New order (customer opened the payment pop-up)\n\n") +
-        "Order: " + code + "\nGame: " + g.name + "\nPack: " + p.name + "\nAccount: " + (str(body.account, 120) || "-") +
+      const cust = await readCustToken(env, body.cust);
+      const text = (event === "paid" ? "🟡 TO VERIFY: customer says they paid\nCheck your bank app, then tap a button below.\n\n" : "⏳ PENDING: customer opened the payment page\n\n") +
+        "Order: " + code + "\nGame: " + g.name + "\nPack: " + p.name + "\nAccount: " + (str(body.account, 120) || "-") + "\n" + custLine(cust) +
         "\nTotal: $" + p.usd.toFixed(2) + " (" + khr.toLocaleString("en-US") + " ៛)";
-      const r = await tgSend(text);
+      const r = await tgSend(text, event === "paid" ? { inline_keyboard: [[{ text: "✅ Payment received", callback_data: "ok:" + code }, { text: "❌ Not received", callback_data: "no:" + code }]] } : null);
       return json({ ok: true, sent: r.sent });
+    }
+
+    // Telegram calls this when someone taps a button on an order message (secret header proves it is Telegram)
+    if (path === "/api/telegram" && m === "POST") {
+      if (!tgReady() || !env.ADMIN_PASSWORD) return json({ ok: false }, 503);
+      if (!(await safeEq(req.headers.get("x-telegram-bot-api-secret-token") || "", await tgSecret(env)))) return json({ ok: false }, 401);
+      const up = await req.json().catch(() => ({}));
+      const cq = up && up.callback_query, msg = cq && cq.message;
+      const mt = /^(ok|no):(NS-[A-Z0-9]{5})$/.exec(String((cq && cq.data) || ""));
+      if (cq && msg && mt && String(msg.chat && msg.chat.id) === String(env.TELEGRAM_CHAT_ID)) {
+        const who = str([cq.from && cq.from.first_name, cq.from && cq.from.last_name].filter(Boolean).join(" ") || (cq.from && cq.from.username) || "someone", 60);
+        const when = new Date().toLocaleString("en-GB", { timeZone: "Asia/Phnom_Penh", hour12: false, day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
+        const body = String(msg.text || "").split("\n\n").slice(1).join("\n\n");
+        const head = mt[1] === "ok" ? "✅ PAID: COMPLETE\nConfirmed by " + who + " · " + when : "❌ NOT RECEIVED\nMarked by " + who + " · " + when;
+        await tgCall("editMessageText", { chat_id: msg.chat.id, message_id: msg.message_id, text: head + "\n\n" + body, reply_markup: { inline_keyboard: [] } });
+        await tgCall("answerCallbackQuery", { callback_query_id: cq.id, text: mt[1] === "ok" ? "Marked as paid" : "Marked as not received" });
+      } else if (cq && cq.id) { await tgCall("answerCallbackQuery", { callback_query_id: cq.id }); }
+      return json({ ok: true });
+    }
+
+    // Customer login: the browser sends what the Telegram Login Widget gave it; we check Telegram's signature
+    if (path === "/api/tglogin" && m === "POST") {
+      const ip = (req.headers.get("x-forwarded-for") || "").split(",")[0].trim() || "x";
+      if (throttled("login:" + ip, 15, 60000)) return json({ error: "Too many requests" }, 429);
+      const d = await req.json().catch(() => ({}));
+      if (!(await verifyTelegramLogin(env, d))) return json({ error: "Telegram login failed" }, 401);
+      const name = str([d.first_name, d.last_name].filter(Boolean).join(" "), 60) || "Customer";
+      const un = str(d.username, 40).replace(/[^\w]/g, "");
+      return json({ token: await makeCustToken(env, { id: String(d.id).replace(/\D/g, "").slice(0, 20), name, un }), name, username: un });
     }
 
     if (path === "/api/login" && m === "POST") {
@@ -247,6 +312,11 @@ export async function handle(req, env = {}) {
 
       if (path === "/api/admin/telegram-test" && m === "POST") {
         const r = await tgSend("✅ Test message from your Minnie Store admin. Order alerts will arrive in this chat.");
+        return json(r, r.sent ? 200 : 502);
+      }
+      if (path === "/api/admin/telegram-webhook" && m === "POST") {
+        const host = req.headers.get("x-forwarded-host") || url.host, proto = (req.headers.get("x-forwarded-proto") || url.protocol.replace(":", "")).split(",")[0];
+        const r = await tgCall("setWebhook", { url: proto + "://" + host + "/api/telegram", secret_token: await tgSecret(env), allowed_updates: ["callback_query"], drop_pending_updates: true });
         return json(r, r.sent ? 200 : 502);
       }
       if (path === "/api/admin/products" && m === "GET") return json(await load());
