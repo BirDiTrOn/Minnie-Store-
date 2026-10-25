@@ -147,8 +147,9 @@ h1,h2,h3{letter-spacing:0;line-height:1.35}
 /* ---------- game card button (shown on phones) ---------- */
 .go{display:none}
 #qrBox[hidden]{display:none!important}
-.loginbar{background:var(--surface);border-bottom:1px solid var(--line);font-size:13px}
-.loginbar .wrap{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding-block:8px}
+.loginbar{font-size:13px}
+.loginbar .wrap{display:flex;align-items:center;justify-content:flex-end;gap:10px;flex-wrap:wrap;padding-block:6px 0}
+#loginText:empty{display:none}
 .loginbar[hidden]{display:none}
 .trackform{display:flex;gap:8px;max-width:420px}
 .trackform .btn{width:auto;padding-inline:20px}
@@ -332,7 +333,7 @@ h1,h2,h3{letter-spacing:0;line-height:1.35}
    so the store always opens. */
 var DEFAULT_CFG = JSON.parse(document.getElementById("default-config").textContent);
 var CFG = null;
-var TD = {"statusOpen": "កំពុងបើក", "statusClosed": "បិទ · បើកម៉ោង {time}", "heroTitle": "បញ្ចូលហ្គេមរបស់អ្នក ក្នុងប៉ុន្មាននាទី", "heroText": "ជ្រើសរើសហ្គេម ជ្រើសរើសកញ្ចប់ រួចបង់ប្រាក់តាម KHQR ពីកម្មវិធីធនាគារកម្ពុជាណាមួយ។ តម្លៃបង្ហាញជាដុល្លារអាមេរិកមុនពេលអ្នកបង់។", "heroButton": "ជ្រើសរើសហ្គេម", "gamesTitle": "ហ្គេមទាំងអស់", "countText": "{n} ផលិតផល", "loadingText": "កំពុងផ្ទុកហ្គេម…", "emptyText": "មិនទាន់មានហ្គេមទេ។ សូមត្រឡប់មកវិញនៅពេលក្រោយ។", "fromLabel": "ចាប់ពី", "cardButton": "បញ្ចូលប្រាក់", "soldOutLabel": "អស់ស្តុក", "step1Title": "1. ជ្រើសរើសកញ្ចប់", "step2Title": "2. ព័ត៌មានរបស់អ្នក", "summaryTitle": "សង្ខេបការបញ្ជាទិញ", "rowGame": "ហ្គេម", "rowPack": "កញ្ចប់", "rowAccount": "គណនី", "rowTotal": "សរុប", "rowRiel": "ជាប្រាក់រៀល", "payButton": "បង់ប្រាក់តាម KHQR", "payTitle": "ស្កេនដើម្បីបង់ប្រាក់", "payExactly": "សូមបង់ចំនួន", "orderCodeLabel": "លេខកូដបញ្ជាទិញ", "payNoteWho": "ឈ្មោះគណនីលើ QR៖ {name}។", "payNote": "បន្ទាប់ពីបង់ប្រាក់ សូមផ្ញើរូបថតអេក្រង់នៃការបង់ប្រាក់ និងលេខកូដបញ្ជាទិញទៅ Telegram។ យើងនឹងបញ្ចូលភ្លាមៗ នៅពេលបញ្ជាក់ការបង់ប្រាក់រួច។", "paidButton": "ខ្ញុំបានបង់ប្រាក់ហើយ", "paidSentMsg": "បានជូនដំណឹងទៅហាងហើយ! សូមផ្ញើរូបថតអេក្រង់ទៅ Telegram ផងដែរ។", "telegramButton": "ផ្ញើរូបថតអេក្រង់ទៅ Telegram", "copyButton": "ចម្លងព័ត៌មានបញ្ជាទិញ", "copiedMsg": "បានចម្លងហើយ។ សូមបិទភ្ជាប់ក្នុង Telegram រួមជាមួយរូបថតអេក្រង់នៃការបង់ប្រាក់។", "copyFailMsg": "ចម្លងមិនបានទេ។ សូមជ្រើសរើសព័ត៌មាន ហើយចម្លងដោយដៃ។", "msgOrder": "{store} លេខបញ្ជាទិញ {code}", "msgGame": "ហ្គេម", "msgPack": "កញ្ចប់", "msgAccount": "គណនី", "msgTotal": "សរុប", "feat1Title": "រហ័ស", "feat1Text": "ការបញ្ជាទិញត្រូវបានដំណើរការភ្លាមៗ បន្ទាប់ពីបញ្ជាក់ការបង់ប្រាក់ ក្នុងម៉ោងបើកទ្វារ។", "feat2Title": "តម្លៃច្បាស់លាស់", "feat2Text": "អ្នកឃើញតម្លៃសរុបជាដុល្លារមុនពេលបង់ ហើយគ្មានថ្លៃលាក់កំបាំងទេ។", "feat3Title": "បង់ប្រាក់តាម KHQR", "feat3Text": "ស្កេនជាមួយ ABA, ACLEDA, Wing ឬកម្មវិធីធនាគារណាដែលគាំទ្រ KHQR។", "footerText": "© 2026 {store} · Telegram {telegram}", "footerAccept": "យើងទទួលការទូទាត់តាម", "loginHello": "សួស្តី {name}", "logoutLabel": "ចាកចេញ", "loginPrompt": "ចូលតាម Telegram ដើម្បីឱ្យយើងស្គាល់អ្នក", "trackTitle": "តាមដានការបញ្ជាទិញ", "trackHint": "បញ្ចូលលេខកូដបញ្ជាទិញរបស់អ្នក (ឧទាហរណ៍ NS-AB123) ដើម្បីមើលស្ថានភាព។", "trackPlaceholder": "NS-XXXXX", "trackButton": "ពិនិត្យ", "trackNotFound": "រកមិនឃើញការបញ្ជាទិញនេះទេ។ សូមពិនិត្យលេខកូដម្តងទៀត។", "trackEmpty": "មិនទាន់មានការបញ្ជាទិញនៅលើឧបករណ៍នេះទេ។", "trackLink": "តាមដានការបញ្ជាទិញ", "trackUpdated": "ធ្វើបច្ចុប្បន្នភាព {time}", "statusPending": "រង់ចាំការបង់ប្រាក់", "statusVerifying": "កំពុងពិនិត្យការបង់ប្រាក់", "statusPaid": "បានទទួលការបង់ប្រាក់ · កំពុងបញ្ចូល", "statusDelivered": "បានបញ្ចូលរួចរាល់", "statusRejected": "មិនទាន់ទទួលបានការបង់ប្រាក់"};   // built-in (Khmer) wording; your edits from /admin override it
+var TD = {"statusOpen": "កំពុងបើក", "statusClosed": "បិទ · បើកម៉ោង {time}", "heroTitle": "បញ្ចូលហ្គេមរបស់អ្នក ក្នុងប៉ុន្មាននាទី", "heroText": "ជ្រើសរើសហ្គេម ជ្រើសរើសកញ្ចប់ រួចបង់ប្រាក់តាម KHQR ពីកម្មវិធីធនាគារកម្ពុជាណាមួយ។ តម្លៃបង្ហាញជាដុល្លារអាមេរិកមុនពេលអ្នកបង់។", "heroButton": "ជ្រើសរើសហ្គេម", "gamesTitle": "ហ្គេមទាំងអស់", "countText": "{n} ផលិតផល", "loadingText": "កំពុងផ្ទុកហ្គេម…", "emptyText": "មិនទាន់មានហ្គេមទេ។ សូមត្រឡប់មកវិញនៅពេលក្រោយ។", "fromLabel": "ចាប់ពី", "cardButton": "បញ្ចូលប្រាក់", "soldOutLabel": "អស់ស្តុក", "step1Title": "1. ជ្រើសរើសកញ្ចប់", "step2Title": "2. ព័ត៌មានរបស់អ្នក", "summaryTitle": "សង្ខេបការបញ្ជាទិញ", "rowGame": "ហ្គេម", "rowPack": "កញ្ចប់", "rowAccount": "គណនី", "rowTotal": "សរុប", "rowRiel": "ជាប្រាក់រៀល", "payButton": "បង់ប្រាក់តាម KHQR", "payTitle": "ស្កេនដើម្បីបង់ប្រាក់", "payExactly": "សូមបង់ចំនួន", "orderCodeLabel": "លេខកូដបញ្ជាទិញ", "payNoteWho": "ឈ្មោះគណនីលើ QR៖ {name}។", "payNote": "បន្ទាប់ពីបង់ប្រាក់ សូមផ្ញើរូបថតអេក្រង់នៃការបង់ប្រាក់ និងលេខកូដបញ្ជាទិញទៅ Telegram។ យើងនឹងបញ្ចូលភ្លាមៗ នៅពេលបញ្ជាក់ការបង់ប្រាក់រួច។", "paidButton": "ខ្ញុំបានបង់ប្រាក់ហើយ", "paidSentMsg": "បានជូនដំណឹងទៅហាងហើយ! កំពុងបើក Telegram សូមភ្ជាប់រូបថតវិក្កយបត្រ ហើយផ្ញើ។", "telegramButton": "ផ្ញើរូបថតអេក្រង់ទៅ Telegram", "copyButton": "ចម្លងព័ត៌មានបញ្ជាទិញ", "copiedMsg": "បានចម្លងហើយ។ សូមបិទភ្ជាប់ក្នុង Telegram រួមជាមួយរូបថតអេក្រង់នៃការបង់ប្រាក់។", "copyFailMsg": "ចម្លងមិនបានទេ។ សូមជ្រើសរើសព័ត៌មាន ហើយចម្លងដោយដៃ។", "msgOrder": "{store} លេខបញ្ជាទិញ {code}", "msgGame": "ហ្គេម", "msgPack": "កញ្ចប់", "msgAccount": "គណនី", "msgTotal": "សរុប", "receiptAsk": "📎 សូមភ្ជាប់រូបថតអេក្រង់នៃការបង់ប្រាក់ (វិក្កយបត្រ) នៅខាងក្រោម។", "feat1Title": "រហ័ស", "feat1Text": "ការបញ្ជាទិញត្រូវបានដំណើរការភ្លាមៗ បន្ទាប់ពីបញ្ជាក់ការបង់ប្រាក់ ក្នុងម៉ោងបើកទ្វារ។", "feat2Title": "តម្លៃច្បាស់លាស់", "feat2Text": "អ្នកឃើញតម្លៃសរុបជាដុល្លារមុនពេលបង់ ហើយគ្មានថ្លៃលាក់កំបាំងទេ។", "feat3Title": "បង់ប្រាក់តាម KHQR", "feat3Text": "ស្កេនជាមួយ ABA, ACLEDA, Wing ឬកម្មវិធីធនាគារណាដែលគាំទ្រ KHQR។", "footerText": "© 2026 {store} · Telegram {telegram}", "footerAccept": "យើងទទួលការទូទាត់តាម", "loginHello": "សួស្តី {name}", "logoutLabel": "ចាកចេញ", "loginPrompt": "ចូលតាម Telegram ដើម្បីឱ្យយើងស្គាល់អ្នក", "trackTitle": "តាមដានការបញ្ជាទិញ", "trackHint": "បញ្ចូលលេខកូដបញ្ជាទិញរបស់អ្នក (ឧទាហរណ៍ NS-AB123) ដើម្បីមើលស្ថានភាព។", "trackPlaceholder": "NS-XXXXX", "trackButton": "ពិនិត្យ", "trackNotFound": "រកមិនឃើញការបញ្ជាទិញនេះទេ។ សូមពិនិត្យលេខកូដម្តងទៀត។", "trackEmpty": "មិនទាន់មានការបញ្ជាទិញនៅលើឧបករណ៍នេះទេ។", "trackLink": "តាមដានការបញ្ជាទិញ", "trackUpdated": "ធ្វើបច្ចុប្បន្នភាព {time}", "statusPending": "រង់ចាំការបង់ប្រាក់", "statusVerifying": "កំពុងពិនិត្យការបង់ប្រាក់", "statusPaid": "បានទទួលការបង់ប្រាក់ · កំពុងបញ្ចូល", "statusDelivered": "បានបញ្ចូលរួចរាល់", "statusRejected": "មិនទាន់ទទួលបានការបង់ប្រាក់"};   // built-in (Khmer) wording; your edits from /admin override it
 /* T("key", {name:value}) = your edited text, or the built-in one; {name} placeholders are filled in */
 function T(k,v){var o=(CFG&&CFG.settings&&CFG.settings.texts)||{};var s=o[k]||TD[k]||"";if(v)for(var n in v)s=s.split("{"+n+"}").join(v[n]);return s}
 
@@ -420,6 +421,22 @@ function refresh(){
   $("sKhr").textContent=pack?khr(pack):"-";
   $("payBtn").disabled=!ready();
 }
+function tgUrl(){return "https://t.me/"+CFG.settings.telegram+"?text="+encodeURIComponent(summaryText()+"\n\n"+T("receiptAsk"))}
+function clearPending(){try{localStorage.removeItem("minnie-pending")}catch(e){}}
+var resumed=false;
+function resumePending(){   // the customer paid on the bank page and came back: offer "I have paid" + Telegram
+  if(resumed||!CFG)return;var p=null;try{p=JSON.parse(localStorage.getItem("minnie-pending"))}catch(e){}
+  if(!p)return;
+  if(Date.now()-p.ts>3*3600*1000){clearPending();return}
+  var g=CFG.games.filter(function(x){return x.id===p.game})[0];if(!g||!g.packs[p.pack]){clearPending();return}
+  resumed=true;choose(g);pack=g.packs[p.pack];vals=p.vals||{};code=p.code;
+  $("pkgs").querySelectorAll(".pkg").forEach(function(b,i){b.setAttribute("aria-pressed",i===p.pack?"true":"false")});
+  g.fields.forEach(function(fl){var i=$("f-"+fl.key);if(i)i.value=vals[fl.key]||""});refresh();
+  $("code").textContent=code;$("payAmt").textContent=money(pack.usd)+" ("+khr(pack)+")";
+  $("qrBox").textContent="";$("qrBox").hidden=true;$("payNote").textContent=T("payNote");
+  $("tgBtn").href=tgUrl();$("copyMsg").textContent="";$("paidBtn").disabled=false;$("trackLinkBtn").hidden=!(CFG&&CFG.tracking);openPay();
+}
+window.addEventListener("pageshow",function(e){if(e.persisted){resumed=false;resumePending()}});
 function summaryText(){
   return T("msgOrder",{store:CFG.settings.storeName,code:code})+"\n"+T("msgGame")+": "+cur.name+"\n"+T("msgPack")+": "+pack.name+"\n"+T("msgAccount")+": "+acct()+"\n"+T("msgTotal")+": "+money(pack.usd)+" ("+khr(pack)+")";
 }
@@ -431,11 +448,13 @@ $("payBtn").addEventListener("click",function(){
   var q=$("qrBox");q.textContent="";
   var qs=CFG.settings.qrCodes||[],qp=null;
   qs.forEach(function(x){if(x.link&&x.usd!==""&&x.usd!=null&&!qp&&Math.abs(Number(x.usd)-pack.usd)<0.005)qp=x});
-  if(qp){remember(code);notify("new");location.href=qp.link;return}   // this price's payment page opens in this window
+  if(qp){remember(code);notify("new");
+    try{localStorage.setItem("minnie-pending",JSON.stringify({code:code,game:cur.id,pack:cur.packs.indexOf(pack),vals:vals,ts:Date.now()}))}catch(e){}
+    location.href=qp.link;return}   // this price's payment page opens in this window
   q.hidden=true;notify("new");
   var who="";
   $("payNote").textContent=(who?T("payNoteWho",{name:who})+" ":"")+T("payNote");
-  $("tgBtn").href="https://t.me/"+CFG.settings.telegram;
+  $("tgBtn").href=tgUrl();
   $("copyMsg").textContent="";$("paidBtn").disabled=false;remember(code);$("trackLinkBtn").hidden=!(CFG&&CFG.tracking);openPay();
 });
 function notify(ev){
@@ -443,10 +462,12 @@ function notify(ev){
     body:JSON.stringify({event:ev,cust:(USER&&USER.token)||"",code:code,game:cur.id,pack:cur.packs.indexOf(pack),account:acct()})}).catch(function(){})}catch(e){}
 }
 $("paidBtn").addEventListener("click",function(){
-  this.disabled=true;notify("paid");$("copyMsg").textContent=T("paidSentMsg");
+  this.disabled=true;notify("paid");clearPending();$("copyMsg").textContent=T("paidSentMsg");
+  var w=null;try{w=window.open(tgUrl(),"_blank")}catch(e){}      // opens the shop's Telegram chat with the order details typed in
+  if(!w)location.href=tgUrl();
 });
 function openPay(){$("pay").hidden=false;document.body.style.overflow="hidden";$("payClose").focus()}
-function closePay(){$("pay").hidden=true;document.body.style.overflow=""}
+function closePay(){clearPending();$("pay").hidden=true;document.body.style.overflow=""}
 $("payClose").addEventListener("click",closePay);
 $("pay").addEventListener("click",function(e){if(e.target===$("pay"))closePay()});
 document.addEventListener("keydown",function(e){if(e.key==="Escape"&&!$("pay").hidden)closePay()});
@@ -501,11 +522,11 @@ function showUser(){
   var bar=$("loginBar");if(!bar)return;
   var bot=(CFG&&CFG.loginBot)||"";
   bar.hidden=!(USER||bot);
-  $("loginText").textContent=USER?T("loginHello",{name:USER.username?"@"+USER.username:USER.name}):T("loginPrompt");
+  $("loginText").textContent=USER?T("loginHello",{name:USER.username?"@"+USER.username:USER.name}):"";
   $("logoutBtn").hidden=!USER;$("loginSlot").hidden=!!USER;
   if(!USER&&bot&&!$("loginSlot").firstChild&&document.readyState==="complete"){
     var s=document.createElement("script");s.async=true;s.src="https://telegram.org/js/telegram-widget.js?22";
-    s.setAttribute("data-telegram-login",bot);s.setAttribute("data-size","medium");s.setAttribute("data-radius","10");
+    s.setAttribute("data-telegram-login",bot);s.setAttribute("data-size","small");s.setAttribute("data-radius","10");
     s.setAttribute("data-request-access","write");s.setAttribute("data-onauth","onTgAuth(user)");$("loginSlot").appendChild(s);
   }
 }
@@ -525,8 +546,8 @@ function apply(cfg){
   document.querySelectorAll("[data-t]").forEach(function(e){e.textContent=T(e.dataset.t)});
   $("footText").textContent=T("footerText",{store:s.storeName,telegram:"@"+s.telegram});
   // if the customer is mid-order and the game changed, keep their selection only if it still exists
-  if(cur){var still=cfg.games.filter(function(g){return g.id===cur.id&&!g.soldOut})[0];if(!still){cur=null;pack=null;$("order").hidden=true}else{cur=still}}
-  renderGrid();tick();showUser();trLoad();
+  if(cur){var still=cfg.games.filter(function(g){return g.id===cur.id&&!g.soldOut})[0];if(!still){cur=null;pack=null;$("order").hidden=true}else{var op=pack;cur=still;if(op){pack=still.packs.filter(function(x){return x.name===op.name&&x.usd===op.usd})[0]||null}}}
+  renderGrid();tick();showUser();trLoad();resumePending();
 }
 function saved(){try{return JSON.parse(localStorage.getItem("minnie-cfg"))}catch(e){return null}}
 apply(saved()||DEFAULT_CFG);            // show something immediately
