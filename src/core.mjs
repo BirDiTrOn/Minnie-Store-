@@ -81,6 +81,43 @@ async function sbGetImage(id) {
   return { data: await r.arrayBuffer(), type: r.headers.get("content-type") || "image/jpeg" };
 }
 
+/* ---------- order tracking (table "orders", see supabase-setup.sql) ---------- */
+const ORDER_FLOW = ["pending", "verifying", "paid", "delivered"];
+async function sbOrderGet(code) {
+  const r = await fetch(SB_URL() + "/rest/v1/orders?code=eq." + encodeURIComponent(code) + "&select=*", { headers: sbHeaders() });
+  if (!r.ok) throw new Error("orders read failed " + r.status);
+  return (await r.json())[0] || null;
+}
+async function sbOrdersByCust(id) {
+  const r = await fetch(SB_URL() + "/rest/v1/orders?cust_id=eq." + encodeURIComponent(id) + "&order=created_at.desc&limit=15&select=*", { headers: sbHeaders() });
+  if (!r.ok) throw new Error("orders read failed " + r.status);
+  return r.json();
+}
+async function sbOrderInsert(row) {
+  const r = await fetch(SB_URL() + "/rest/v1/orders?on_conflict=code", {
+    method: "POST", headers: sbHeaders({ "content-type": "application/json", Prefer: "resolution=ignore-duplicates,return=minimal" }), body: JSON.stringify(row) });
+  if (!r.ok) throw new Error("orders write failed " + r.status);
+}
+async function sbOrderPatch(code, patch) {
+  const r = await fetch(SB_URL() + "/rest/v1/orders?code=eq." + encodeURIComponent(code), {
+    method: "PATCH", headers: sbHeaders({ "content-type": "application/json", Prefer: "return=minimal" }), body: JSON.stringify(patch) });
+  if (!r.ok) throw new Error("orders write failed " + r.status);
+}
+/* move an order to a new status and remember when; never throws (tracking must not break ordering) */
+async function setOrderStatus(code, status, base) {
+  if (!sbConfigured()) return;
+  try {
+    let o = await sbOrderGet(code);
+    const now = new Date().toISOString();
+    if (!o) { if (!base) return; await sbOrderInsert({ code, ...base, status, history: [{ s: status, t: now }], updated_at: now }); return; }
+    if (o.status === status) return;
+    // customer "I have paid" may only move a pending order forward; owner decisions always apply
+    if (status === "verifying" && o.status !== "pending") return;
+    await sbOrderPatch(code, { status, history: [...(o.history || []), { s: status, t: now }], updated_at: now });
+  } catch (e) { /* ignore */ }
+}
+const publicOrder = (o) => ({ code: o.code, game: o.game, pack: o.pack, usd: Number(o.usd), status: o.status, created: o.created_at, updated: o.updated_at, history: o.history || [] });
+
 /* ---------- validation: never trust the client ---------- */
 const str = (v, max) => String(v ?? "").replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, "").trim().slice(0, max);
 const num = (v, min, max, dflt) => { const n = Number(v); return Number.isFinite(n) ? Math.min(max, Math.max(min, n)) : dflt; };
@@ -221,7 +258,7 @@ export async function handle(req, env = {}) {
     // Public: what the storefront shows (hidden games removed)
     if (path === "/api/products" && m === "GET") {
       const cfg = await load();
-      return json({ ...cfg, games: cfg.games.filter((g) => !g.hidden), loginBot: await botUsername() });
+      return json({ ...cfg, games: cfg.games.filter((g) => !g.hidden), loginBot: await botUsername(), tracking: sbConfigured() });
     }
 
     // Safe diagnostics: says only whether settings are present (never their values)
@@ -234,6 +271,7 @@ export async function handle(req, env = {}) {
         telegramBotTokenSet: !!env.TELEGRAM_BOT_TOKEN,
         telegramChatIdSet: !!env.TELEGRAM_CHAT_ID,
         telegramLoginBot: await botUsername(),
+        ordersTableOk: await (async () => { if (!sbConfigured()) return false; try { await sbOrderGet("NS-00000"); return true; } catch (e) { return false; } })(),
         settingNamesSeen: Object.keys(env).filter((k) => /admin|supabase|telegram/i.test(k)).map((k) => JSON.stringify(k)),
       });
     }
@@ -256,6 +294,7 @@ export async function handle(req, env = {}) {
       const text = (event === "paid" ? "🟡 TO VERIFY: customer says they paid\nCheck your bank app, then tap a button below.\n\n" : "⏳ PENDING: customer opened the payment page\n\n") +
         "Order: " + code + "\nGame: " + g.name + "\nPack: " + p.name + "\nAccount: " + (str(body.account, 120) || "-") + "\n" + custLine(cust) +
         "\nTotal: $" + p.usd.toFixed(2) + " (" + khr.toLocaleString("en-US") + " ៛)";
+      await setOrderStatus(code, event === "paid" ? "verifying" : "pending", { game: g.name, pack: p.name, usd: p.usd, cust_id: cust ? cust.id : null });
       const r = await tgSend(text, event === "paid" ? { inline_keyboard: [[{ text: "✅ Payment received", callback_data: "ok:" + code }, { text: "❌ Not received", callback_data: "no:" + code }]] } : null);
       return json({ ok: true, sent: r.sent });
     }
@@ -266,14 +305,17 @@ export async function handle(req, env = {}) {
       if (!(await safeEq(req.headers.get("x-telegram-bot-api-secret-token") || "", await tgSecret(env)))) return json({ ok: false }, 401);
       const up = await req.json().catch(() => ({}));
       const cq = up && up.callback_query, msg = cq && cq.message;
-      const mt = /^(ok|no):(NS-[A-Z0-9]{5})$/.exec(String((cq && cq.data) || ""));
+      const mt = /^(ok|no|dl):(NS-[A-Z0-9]{5})$/.exec(String((cq && cq.data) || ""));
       if (cq && msg && mt && String(msg.chat && msg.chat.id) === String(env.TELEGRAM_CHAT_ID)) {
         const who = str([cq.from && cq.from.first_name, cq.from && cq.from.last_name].filter(Boolean).join(" ") || (cq.from && cq.from.username) || "someone", 60);
         const when = new Date().toLocaleString("en-GB", { timeZone: "Asia/Phnom_Penh", hour12: false, day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
         const body = String(msg.text || "").split("\n\n").slice(1).join("\n\n");
-        const head = mt[1] === "ok" ? "✅ PAID: COMPLETE\nConfirmed by " + who + " · " + when : "❌ NOT RECEIVED\nMarked by " + who + " · " + when;
-        await tgCall("editMessageText", { chat_id: msg.chat.id, message_id: msg.message_id, text: head + "\n\n" + body, reply_markup: { inline_keyboard: [] } });
-        await tgCall("answerCallbackQuery", { callback_query_id: cq.id, text: mt[1] === "ok" ? "Marked as paid" : "Marked as not received" });
+        const k = mt[1], code = mt[2];
+        const head = k === "ok" ? "✅ PAID: COMPLETE\nConfirmed by " + who + " · " + when : k === "dl" ? "📦 DELIVERED\nMarked by " + who + " · " + when : "❌ NOT RECEIVED\nMarked by " + who + " · " + when;
+        const markup = k === "ok" ? { inline_keyboard: [[{ text: "📦 Mark as delivered", callback_data: "dl:" + code }]] } : { inline_keyboard: [] };
+        await setOrderStatus(code, k === "ok" ? "paid" : k === "dl" ? "delivered" : "rejected");
+        await tgCall("editMessageText", { chat_id: msg.chat.id, message_id: msg.message_id, text: head + "\n\n" + body, reply_markup: markup });
+        await tgCall("answerCallbackQuery", { callback_query_id: cq.id, text: k === "ok" ? "Marked as paid" : k === "dl" ? "Marked as delivered" : "Marked as not received" });
       } else if (cq && cq.id) { await tgCall("answerCallbackQuery", { callback_query_id: cq.id }); }
       return json({ ok: true });
     }
@@ -287,6 +329,24 @@ export async function handle(req, env = {}) {
       const name = str([d.first_name, d.last_name].filter(Boolean).join(" "), 60) || "Customer";
       const un = str(d.username, 40).replace(/[^\w]/g, "");
       return json({ token: await makeCustToken(env, { id: String(d.id).replace(/\D/g, "").slice(0, 20), name, un }), name, username: un });
+    }
+
+    // Public: look up one order by its code (only non-private fields are returned)
+    if (path === "/api/track" && m === "GET") {
+      const ip = (req.headers.get("x-forwarded-for") || "").split(",")[0].trim() || "x";
+      if (throttled("track:" + ip, 60, 60000)) return json({ error: "Too many requests" }, 429);
+      const code = str(url.searchParams.get("code"), 12).toUpperCase();
+      if (!/^NS-[A-Z0-9]{5}$/.test(code) || !sbConfigured()) return json({ error: "Not found" }, 404);
+      let o = null; try { o = await sbOrderGet(code); } catch (e) {}
+      return o ? json(publicOrder(o)) : json({ error: "Not found" }, 404);
+    }
+    // Logged-in customers: their own orders
+    if (path === "/api/myorders" && m === "POST") {
+      const body = await req.json().catch(() => ({}));
+      const c = await readCustToken(env, body.cust);
+      if (!c || !sbConfigured()) return json({ orders: [] });
+      let rows = []; try { rows = await sbOrdersByCust(c.id); } catch (e) {}
+      return json({ orders: rows.map(publicOrder) });
     }
 
     if (path === "/api/login" && m === "POST") {
@@ -318,6 +378,21 @@ export async function handle(req, env = {}) {
         const host = req.headers.get("x-forwarded-host") || url.host, proto = (req.headers.get("x-forwarded-proto") || url.protocol.replace(":", "")).split(",")[0];
         const r = await tgCall("setWebhook", { url: proto + "://" + host + "/api/telegram", secret_token: await tgSecret(env), allowed_updates: ["callback_query"], drop_pending_updates: true });
         return json(r, r.sent ? 200 : 502);
+      }
+      if (path === "/api/admin/orders" && m === "GET") {
+        if (!sbConfigured()) return json({ orders: [], error: "Supabase is not connected" });
+        const r = await fetch(SB_URL() + "/rest/v1/orders?order=created_at.desc&limit=100&select=*", { headers: sbHeaders() });
+        if (!r.ok) return json({ orders: [], error: "Orders table not found. Run supabase-setup.sql in Supabase." }, 502);
+        return json({ orders: (await r.json()).map(publicOrder) });
+      }
+      if (path === "/api/admin/orders" && m === "PUT") {
+        const b = await req.json().catch(() => ({}));
+        const code = str(b.code, 12), st = str(b.status, 12);
+        if (!/^NS-[A-Z0-9]{5}$/.test(code) || ![...ORDER_FLOW, "rejected"].includes(st)) return json({ error: "Bad request" }, 400);
+        const o = await sbOrderGet(code).catch(() => null);
+        if (!o) return json({ error: "Order not found" }, 404);
+        await setOrderStatus(code, st);
+        return json({ ok: true });
       }
       if (path === "/api/admin/products" && m === "GET") return json(await load());
 

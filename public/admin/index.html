@@ -123,6 +123,7 @@ input[type=color]{padding:2px;height:42px;width:64px}
     <div class="tabs" role="tablist">
       <button class="tab" role="tab" data-tab="games" aria-selected="true">Games</button>
       <button class="tab" role="tab" data-tab="settings" aria-selected="false">Settings</button>
+      <button class="tab" role="tab" data-tab="orders" aria-selected="false">Orders</button>
       <button class="tab" role="tab" data-tab="texts" aria-selected="false">Texts</button>
     </div>
 
@@ -156,6 +157,11 @@ input[type=color]{padding:2px;height:42px;width:64px}
         <p class="hint" style="margin:0">Orders show <b>⏳ PENDING</b> first. When a customer presses "I have paid", the message gets <b>✅ Payment received</b> and <b>❌ Not received</b> buttons. Tap one in Telegram and the message changes to <b>PAID: COMPLETE</b> or <b>NOT RECEIVED</b>. Press "Turn on" once (and again if you change your domain). For customer login, tell BotFather your site: send <code>/setdomain</code>, choose your bot, and enter your store's domain (for example minnietopup.vercel.app).</p>
       </div>
       <p class="hint">To change the admin password, open Vercel → your project → Settings → Environment Variables → edit <b>ADMIN_PASSWORD</b>, then redeploy.</p>
+    </section>
+
+    <section id="tabOrders" hidden>
+      <p class="hint" style="margin:0 0 12px">Latest 100 orders. Change an order's status here, or with the buttons in Telegram. Customers see the new status when they track their order. <button class="btn ghost small" id="ordReload" type="button">Refresh</button></p>
+      <div id="ordList" class="stack"></div>
     </section>
 
     <section id="tabTexts" hidden>
@@ -368,7 +374,7 @@ $("resetTexts").addEventListener("click",function(){
 /* ---------- tabs ---------- */
 document.querySelectorAll(".tab").forEach(function(t){t.addEventListener("click",function(){
   document.querySelectorAll(".tab").forEach(function(x){x.setAttribute("aria-selected",x===t?"true":"false")});
-  $("tabGames").hidden=t.dataset.tab!=="games";$("tabSettings").hidden=t.dataset.tab!=="settings";$("tabTexts").hidden=t.dataset.tab!=="texts";
+  $("tabGames").hidden=t.dataset.tab!=="games";$("tabSettings").hidden=t.dataset.tab!=="settings";$("tabTexts").hidden=t.dataset.tab!=="texts";$("tabOrders").hidden=t.dataset.tab!=="orders";if(t.dataset.tab==="orders")loadOrders();
 })});
 
 /* ---------- image upload (resized in the browser first) ---------- */
@@ -429,6 +435,25 @@ $("qrList").addEventListener("click",function(e){
   setDirty(true);renderQr();
 });
 
+/* ---------- orders ---------- */
+var ORD_ST=[["pending","⏳ Pending payment"],["verifying","🟡 Customer says paid"],["paid","✅ Paid"],["delivered","📦 Delivered"],["rejected","❌ Not received"]];
+function loadOrders(){
+  var box=$("ordList");box.innerHTML='<p class="hint">Loading…</p>';
+  api("/api/admin/orders").then(function(d){
+    box.textContent="";if(d.error)box.innerHTML='<p class="hint"></p>',box.firstChild.textContent=d.error;
+    if(!d.orders.length&&!d.error)box.innerHTML='<p class="hint">No orders yet.</p>';
+    d.orders.forEach(function(o){
+      var r=document.createElement("div");r.className="qrow";r.style.flexWrap="wrap";
+      r.innerHTML='<div style="flex:1;min-width:150px"><b></b><div class="hint" style="margin:2px 0 0"></div></div><select aria-label="Status" style="padding:9px;border-radius:10px;border:1px solid var(--line);background:var(--bg)"></select>';
+      r.querySelector("b").textContent=o.code;
+      r.querySelector(".hint").textContent=o.game+" · "+o.pack+" · $"+Number(o.usd).toFixed(2)+" · "+new Date(o.created).toLocaleString("en-GB",{timeZone:"Asia/Phnom_Penh",hour12:false,day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"});
+      var sel=r.querySelector("select");ORD_ST.forEach(function(s){var op=document.createElement("option");op.value=s[0];op.textContent=s[1];sel.appendChild(op)});sel.value=o.status;
+      sel.addEventListener("change",function(){api("/api/admin/orders",{method:"PUT",headers:{"content-type":"application/json"},body:JSON.stringify({code:o.code,status:sel.value})}).then(function(){toast("Order "+o.code+" updated")}).catch(function(e){if(e.message!=="auth")toast(e.message,true);loadOrders()})});
+      box.appendChild(r);
+    });
+  }).catch(function(e){if(e.message!=="auth"){box.innerHTML='<p class="hint"></p>';box.firstChild.textContent=e.message}});
+}
+$("ordReload").addEventListener("click",loadOrders);
 $("tgHook").addEventListener("click",function(){
   var b=this;b.disabled=true;
   fetch("/api/admin/telegram-webhook",{method:"POST",headers:{Authorization:"Bearer "+token}}).then(function(r){return r.json()})
