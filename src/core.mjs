@@ -158,6 +158,7 @@ function clean(input) {
     const fields = (Array.isArray(g.fields) ? g.fields : []).slice(0, 6).map((f, j) => ({
       key: slug(f.key || f.label, "f" + (j + 1)).replace(/-/g, "_"),
       label: str(f.label, 60) || "Details",
+      ...(f.roblox === true || f.roblox === false ? { roblox: f.roblox } : {}),
     }));
     return {
       id,
@@ -199,6 +200,27 @@ async function tgCall(method, payload) {
 }
 const tgSend = (text, markup) => tgCall("sendMessage", { chat_id: ENV.TELEGRAM_CHAT_ID, text: String(text).slice(0, 3500), disable_web_page_preview: true, ...(markup ? { reply_markup: markup } : {}) });
 const tgSecret = async (env) => b64url(await hmac(await secret(env), "tg-webhook")).slice(0, 40);
+/* ---------- Roblox username check (public Roblox web APIs; the browser can't call them directly) ---------- */
+async function rbxGet(host, path, init) {
+  const base = ENV.ROBLOX_API_BASE ? String(ENV.ROBLOX_API_BASE).replace(/\/+$/, "") + "/" + host : "https://" + host;
+  const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), 4500);
+  try { const r = await fetch(base + path, { ...(init || {}), signal: ctl.signal, headers: { accept: "application/json", ...((init && init.headers) || {}) } }); if (!r.ok) throw new Error("HTTP " + r.status); return await r.json(); }
+  finally { clearTimeout(t); }
+}
+/* returns {found:false} when the name does not exist, a profile when it does; throws when Roblox can't be reached */
+async function robloxLookup(name) {
+  const u = await rbxGet("users.roblox.com", "/v1/usernames/users", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ usernames: [name], excludeBannedUsers: true }) });
+  const me = u && u.data && u.data[0];
+  if (!me) return { found: false };
+  const id = Number(me.id);
+  const cnt = (k) => rbxGet("friends.roblox.com", "/v1/users/" + id + "/" + k + "/count").then((d) => Number(d.count) || 0).catch(() => null);
+  const [img, friends, followers, following] = await Promise.all([
+    rbxGet("thumbnails.roblox.com", "/v1/users/avatar-headshot?userIds=" + id + "&size=150x150&format=Png&isCircular=false").then((d) => d.data && d.data[0] && d.data[0].imageUrl).catch(() => ""),
+    cnt("friends"), cnt("followers"), cnt("followings"),
+  ]);
+  return { found: true, id, name: str(me.name, 30), displayName: str(me.displayName || me.name, 40), verified: !!me.hasVerifiedBadge,
+    avatar: /^https:\/\/[\w.-]+\.rbxcdn\.com\/[\w\-\/.%?=&]+$/.test(img || "") ? img : "", friends, followers, following };
+}
 const seen = new Map();   // best-effort rate limit + duplicate guard (per server instance)
 function throttled(key, limit, ms) {
   const now = Date.now(); const a = (seen.get(key) || []).filter((x) => now - x < ms);
@@ -237,6 +259,18 @@ export async function handle(req, env = {}) {
       });
     }
 
+    // Public: check that a Roblox username exists and show its profile
+    if (path === "/api/roblox" && m === "GET") {
+      const ip = (req.headers.get("x-forwarded-for") || "").split(",")[0].trim() || "x";
+      if (throttled("rbx:" + ip, 120, 60000)) return json({ error: "Too many requests" }, 429);
+      const name = str(url.searchParams.get("u"), 30);
+      if (!/^[A-Za-z0-9_]{3,20}$/.test(name)) return json({ error: "notfound" }, 404);
+      try {
+        const r = await robloxLookup(name);
+        return r.found ? json({ ok: true, ...r, found: undefined }) : json({ error: "notfound" }, 404);
+      } catch (e) { return json({ error: "unavailable" }, 503); }
+    }
+
     // Public: tell the shop owner (Telegram) about an order. Price and names come from OUR data, not the browser.
     if (path === "/api/order" && m === "POST") {
       const body = await req.json().catch(() => ({}));
@@ -251,8 +285,13 @@ export async function handle(req, env = {}) {
       const p = g && g.packs[Math.floor(Number(body.pack))];
       if (!g || !p) return json({ error: "Unknown item" }, 400);
       const khr = p.khr || Math.round((p.usd * cfg.settings.khrRate) / 100) * 100;
+      let rbxLine = "";
+      const rn = str(body.rbx, 30);
+      if (/^[A-Za-z0-9_]{3,20}$/.test(rn)) {
+        try { const r = await robloxLookup(rn); rbxLine = r.found ? "\nRoblox: " + r.displayName + " (@" + r.name + ") · id " + r.id + "\nhttps://www.roblox.com/users/" + r.id + "/profile" : "\nRoblox: @" + rn + " (not found)"; } catch (e) { rbxLine = "\nRoblox: @" + rn + " (could not check)"; }
+      }
       const text = (event === "paid" ? "🟡 TO VERIFY: customer says they paid\nCheck your bank app, then tap a button below.\n\n" : "⏳ PENDING: customer opened the payment page\n\n") +
-        "Order: " + code + "\nGame: " + g.name + "\nPack: " + p.name + "\nAccount: " + (str(body.account, 120) || "-") +
+        "Order: " + code + "\nGame: " + g.name + "\nPack: " + p.name + "\nAccount: " + (str(body.account, 120) || "-") + rbxLine +
         "\nTotal: $" + p.usd.toFixed(2) + " (" + khr.toLocaleString("en-US") + " ៛)";
       await setOrderStatus(code, event === "paid" ? "verifying" : "pending", { game: g.name, pack: p.name, usd: p.usd });
       const r = await tgSend(text, event === "paid" ? { inline_keyboard: [[{ text: "✅ Payment received", callback_data: "ok:" + code }, { text: "❌ Not received", callback_data: "no:" + code }]] } : null);
