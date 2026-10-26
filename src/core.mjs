@@ -194,11 +194,52 @@ async function tgCall(method, payload) {
       method: "POST", headers: { "content-type": "application/json" }, signal: ctl.signal, body: JSON.stringify(payload),
     });
     const d = await r.json().catch(() => ({}));
-    return d.ok ? { sent: true } : { sent: false, error: "Telegram said: " + str(d.description || ("HTTP " + r.status), 200) };
+    return d.ok ? { sent: true, result: d.result } : { sent: false, error: "Telegram said: " + str(d.description || ("HTTP " + r.status), 200) };
   } catch (e) { return { sent: false, error: "Could not reach Telegram." }; }
   finally { clearTimeout(t); }
 }
 const tgSend = (text, markup) => tgCall("sendMessage", { chat_id: ENV.TELEGRAM_CHAT_ID, text: String(text).slice(0, 3500), disable_web_page_preview: true, ...(markup ? { reply_markup: markup } : {}) });
+/* ---- one Telegram message per order: it is sent once and then EDITED as the status changes ---- */
+async function kvGet(id) {
+  if (!sbConfigured()) return null;
+  try { const r = await fetch(SB_URL() + "/rest/v1/store_config?id=eq." + encodeURIComponent(id) + "&select=data", { headers: sbHeaders() }); const rows = r.ok ? await r.json() : []; return (rows[0] && rows[0].data) || null; } catch (e) { return null; }
+}
+async function kvSet(id, data) {
+  if (!sbConfigured()) return;
+  try { await fetch(SB_URL() + "/rest/v1/store_config?on_conflict=id", { method: "POST", headers: sbHeaders({ "content-type": "application/json", Prefer: "resolution=merge-duplicates,return=minimal" }), body: JSON.stringify({ id, data, updated_at: new Date().toISOString() }) }); } catch (e) { /* ignore */ }
+}
+function tgRender(status, body, code, by) {
+  const tag = by ? "\n" + (status === "paid" ? "Confirmed" : "Marked") + " by " + by.who + " · " + by.when : "";
+  const b = (t, d) => ({ text: t, callback_data: d + ":" + code });
+  const heads = {
+    pending: "⏳ PENDING: waiting for payment",
+    verifying: "🟡 TO VERIFY: customer says they paid\nCheck your bank app, then tap a button below.",
+    paid: "✅ PAID: COMPLETE" + tag,
+    delivered: "📦 DELIVERED" + tag,
+    rejected: "❌ NOT RECEIVED" + tag,
+  };
+  const kb = { pending: [[b("✅ Payment received", "ok"), b("❌ Not received", "no")]], verifying: [[b("✅ Payment received", "ok"), b("❌ Not received", "no")]],
+    paid: [[b("📦 Mark as delivered", "dl")]], rejected: [[b("✅ Payment received", "ok")]], delivered: [] };
+  return { text: (heads[status] || heads.pending) + "\n\n" + body, markup: { inline_keyboard: kb[status] || [] } };
+}
+/* opts: body (message text under the status line), by {who,when}, mid (an existing message to edit), onlyIfExists */
+async function tgUpsertOrder(code, status, opts = {}) {
+  if (!tgReady()) return { sent: false };
+  const rec = await kvGet("tg:" + code);
+  const body = opts.body || (rec && rec.b);
+  if (!body) return { sent: false };
+  const { text, markup } = tgRender(status, body, code, opts.by);
+  const mid = opts.mid || (rec && rec.m);
+  if (mid) {
+    const r = await tgCall("editMessageText", { chat_id: ENV.TELEGRAM_CHAT_ID, message_id: mid, text: text.slice(0, 3500), reply_markup: markup, disable_web_page_preview: true });
+    if (r.sent || /not modified/i.test(r.error || "")) { if (!rec || rec.b !== body || rec.m !== mid) await kvSet("tg:" + code, { m: mid, b: body }); return { sent: true }; }
+  }
+  if (opts.onlyIfExists) return { sent: false };
+  const r = await tgSend(text, markup);
+  const id = r.result && r.result.message_id;
+  if (r.sent && id) await kvSet("tg:" + code, { m: id, b: body });
+  return { sent: r.sent };
+}
 const tgSecret = async (env) => b64url(await hmac(await secret(env), "tg-webhook")).slice(0, 40);
 /* ---------- Roblox username check (public Roblox web APIs; the browser can't call them directly) ---------- */
 async function rbxGet(host, path, init) {
@@ -290,11 +331,11 @@ export async function handle(req, env = {}) {
       if (/^[A-Za-z0-9_]{3,20}$/.test(rn)) {
         try { const r = await robloxLookup(rn); rbxLine = r.found ? "\nRoblox: " + r.displayName + " (@" + r.name + ") · id " + r.id + "\nhttps://www.roblox.com/users/" + r.id + "/profile" : "\nRoblox: @" + rn + " (not found)"; } catch (e) { rbxLine = "\nRoblox: @" + rn + " (could not check)"; }
       }
-      const text = (event === "paid" ? "🟡 TO VERIFY: customer says they paid\nCheck your bank app, then tap a button below.\n\n" : "⏳ PENDING: customer opened the payment page\n\n") +
-        "Order: " + code + "\nGame: " + g.name + "\nPack: " + p.name + "\nAccount: " + (str(body.account, 120) || "-") + rbxLine +
+      const msgBody = "Order: " + code + "\nGame: " + g.name + "\nPack: " + p.name + "\nAccount: " + (str(body.account, 120) || "-") + rbxLine +
         "\nTotal: $" + p.usd.toFixed(2) + " (" + khr.toLocaleString("en-US") + " ៛)";
       await setOrderStatus(code, event === "paid" ? "verifying" : "pending", { game: g.name, pack: p.name, usd: p.usd });
-      const r = await tgSend(text, event === "paid" ? { inline_keyboard: [[{ text: "✅ Payment received", callback_data: "ok:" + code }, { text: "❌ Not received", callback_data: "no:" + code }]] } : null);
+      // "new" sends the order's one message; "paid" edits that same message (a new one only if the first is missing)
+      const r = await tgUpsertOrder(code, event === "paid" ? "verifying" : "pending", { body: msgBody });
       return json({ ok: true, sent: r.sent });
     }
 
@@ -308,12 +349,12 @@ export async function handle(req, env = {}) {
       if (cq && msg && mt && String(msg.chat && msg.chat.id) === String(env.TELEGRAM_CHAT_ID)) {
         const who = str([cq.from && cq.from.first_name, cq.from && cq.from.last_name].filter(Boolean).join(" ") || (cq.from && cq.from.username) || "someone", 60);
         const when = new Date().toLocaleString("en-GB", { timeZone: "Asia/Phnom_Penh", hour12: false, day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
-        const body = String(msg.text || "").split("\n\n").slice(1).join("\n\n");
         const k = mt[1], code = mt[2];
-        const head = k === "ok" ? "✅ PAID: COMPLETE\nConfirmed by " + who + " · " + when : k === "dl" ? "📦 DELIVERED\nMarked by " + who + " · " + when : "❌ NOT RECEIVED\nMarked by " + who + " · " + when;
-        const markup = k === "ok" ? { inline_keyboard: [[{ text: "📦 Mark as delivered", callback_data: "dl:" + code }]] } : { inline_keyboard: [] };
-        await setOrderStatus(code, k === "ok" ? "paid" : k === "dl" ? "delivered" : "rejected");
-        await tgCall("editMessageText", { chat_id: msg.chat.id, message_id: msg.message_id, text: head + "\n\n" + body, reply_markup: markup });
+        const status = k === "ok" ? "paid" : k === "dl" ? "delivered" : "rejected";
+        await setOrderStatus(code, status);
+        const rec = await kvGet("tg:" + code);
+        const fallbackBody = String(msg.text || "").split("\n\n").slice(1).join("\n\n");
+        await tgUpsertOrder(code, status, { body: (rec && rec.b) || fallbackBody, by: { who, when }, mid: msg.message_id });
         await tgCall("answerCallbackQuery", { callback_query_id: cq.id, text: k === "ok" ? "Marked as paid" : k === "dl" ? "Marked as delivered" : "Marked as not received" });
       } else if (cq && cq.id) { await tgCall("answerCallbackQuery", { callback_query_id: cq.id }); }
       return json({ ok: true });
@@ -372,6 +413,7 @@ export async function handle(req, env = {}) {
         const o = await sbOrderGet(code).catch(() => null);
         if (!o) return json({ error: "Order not found" }, 404);
         await setOrderStatus(code, st);
+        await tgUpsertOrder(code, st, { by: { who: "admin page", when: new Date().toLocaleString("en-GB", { timeZone: "Asia/Phnom_Penh", hour12: false, day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }) }, onlyIfExists: true });
         return json({ ok: true });
       }
       if (path === "/api/admin/products" && m === "GET") return json(await load());
