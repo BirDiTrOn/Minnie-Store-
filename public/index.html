@@ -149,7 +149,12 @@ h1,h2,h3{letter-spacing:0;line-height:1.35}
 #qrBox[hidden]{display:none!important}
 .rbxbox{grid-column:1/-1}
 .rbxcard[hidden]{display:none}
-.rbxrow{margin-top:8px}.rbxbtn{width:100%;padding:10px 14px}
+.rbxbtn{width:100%;padding:10px 14px;margin-top:8px}
+.acctbox{max-width:560px}.acctbox label{display:block;margin-bottom:6px}
+.rbxlab{font-size:14px;font-weight:500;margin-bottom:6px}
+.rbxval{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:11px 12px;font-weight:600}
+.rbxval.warn{color:var(--warn);font-weight:500}
+.rbxchg{margin-top:8px;padding:8px 12px;width:auto}
 .rbxcard{display:flex;gap:12px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:10px;margin-top:8px}
 .rbxcard img{width:56px;height:56px;border-radius:50%;object-fit:cover;background:var(--soft);flex:none}
 .rbxtxt{min-width:0}.rbxat{color:var(--muted);font-size:13px}
@@ -256,6 +261,20 @@ h1,h2,h3{letter-spacing:0;line-height:1.35}
     </div>
   </section>
 
+  <section class="block" id="acct" hidden>
+    <div class="wrap">
+      <div class="sec-head"><h2 data-t="acctTitle">គណនី Roblox របស់អ្នក</h2></div>
+      <p class="note" style="margin:0 0 10px" data-t="acctHint">បញ្ចូលឈ្មោះអ្នកប្រើ Roblox ហើយចុចពិនិត្យ រួចជ្រើសរើសហ្គេមខាងក្រោម។</p>
+      <div class="acctbox">
+        <label for="acctInput" data-t="acctLabel">ឈ្មោះអ្នកប្រើ Roblox</label>
+        <input id="acctInput" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="20">
+        <button class="btn rbxbtn" id="acctBtn" type="button" data-t="robloxCheck">ពិនិត្យឈ្មោះ</button>
+        <div class="note" id="acctMsg" style="margin:6px 0 0"></div>
+        <div class="rbxcard" id="acctCard" hidden></div>
+      </div>
+    </div>
+  </section>
+
   <section class="block" id="games">
     <div class="wrap">
       <div class="sec-head"><h2 data-t="gamesTitle">ហ្គេមទាំងអស់</h2><span id="count"></span></div>
@@ -335,7 +354,7 @@ h1,h2,h3{letter-spacing:0;line-height:1.35}
    so the store always opens. */
 var DEFAULT_CFG = JSON.parse(document.getElementById("default-config").textContent);
 var CFG = null;
-var TD = {"statusOpen": "កំពុងបើក", "statusClosed": "បិទ · បើកម៉ោង {time}", "heroTitle": "បញ្ចូលហ្គេមរបស់អ្នក ក្នុងប៉ុន្មាននាទី", "heroText": "ជ្រើសរើសហ្គេម ជ្រើសរើសកញ្ចប់ រួចបង់ប្រាក់តាម KHQR ពីកម្មវិធីធនាគារកម្ពុជាណាមួយ។ តម្លៃបង្ហាញជាដុល្លារអាមេរិកមុនពេលអ្នកបង់។", "heroButton": "ជ្រើសរើសហ្គេម", "gamesTitle": "ហ្គេមទាំងអស់", "countText": "{n} ផលិតផល", "loadingText": "កំពុងផ្ទុកហ្គេម…", "emptyText": "មិនទាន់មានហ្គេមទេ។ សូមត្រឡប់មកវិញនៅពេលក្រោយ។", "fromLabel": "ចាប់ពី", "cardButton": "បញ្ចូលប្រាក់", "soldOutLabel": "អស់ស្តុក", "step1Title": "1. ជ្រើសរើសកញ្ចប់", "step2Title": "2. ព័ត៌មានរបស់អ្នក", "summaryTitle": "សង្ខេបការបញ្ជាទិញ", "rowGame": "ហ្គេម", "rowPack": "កញ្ចប់", "rowAccount": "គណនី", "rowTotal": "សរុប", "rowRiel": "ជាប្រាក់រៀល", "payButton": "បង់ប្រាក់តាម KHQR", "payTitle": "ស្កេនដើម្បីបង់ប្រាក់", "payExactly": "សូមបង់ចំនួន", "orderCodeLabel": "លេខកូដបញ្ជាទិញ", "payNoteWho": "ឈ្មោះគណនីលើ QR៖ {name}។", "payNote": "បន្ទាប់ពីបង់ប្រាក់ សូមផ្ញើរូបថតអេក្រង់នៃការបង់ប្រាក់ និងលេខកូដបញ្ជាទិញទៅ Telegram។ យើងនឹងបញ្ចូលភ្លាមៗ នៅពេលបញ្ជាក់ការបង់ប្រាក់រួច។", "paidButton": "ខ្ញុំបានបង់ប្រាក់ហើយ", "paidSentMsg": "បានជូនដំណឹងទៅហាងហើយ! កំពុងបើក Telegram សូមភ្ជាប់រូបថតវិក្កយបត្រ ហើយផ្ញើ។", "telegramButton": "ផ្ញើរូបថតអេក្រង់ទៅ Telegram", "copyButton": "ចម្លងព័ត៌មានបញ្ជាទិញ", "copiedMsg": "បានចម្លងហើយ។ សូមបិទភ្ជាប់ក្នុង Telegram រួមជាមួយរូបថតអេក្រង់នៃការបង់ប្រាក់។", "copyFailMsg": "ចម្លងមិនបានទេ។ សូមជ្រើសរើសព័ត៌មាន ហើយចម្លងដោយដៃ។", "msgOrder": "{store} លេខបញ្ជាទិញ {code}", "msgGame": "ហ្គេម", "msgPack": "កញ្ចប់", "msgAccount": "គណនី", "msgTotal": "សរុប", "receiptAsk": "📎 សូមភ្ជាប់រូបថតអេក្រង់នៃការបង់ប្រាក់ (វិក្កយបត្រ) នៅខាងក្រោម។", "feat1Title": "រហ័ស", "feat1Text": "ការបញ្ជាទិញត្រូវបានដំណើរការភ្លាមៗ បន្ទាប់ពីបញ្ជាក់ការបង់ប្រាក់ ក្នុងម៉ោងបើកទ្វារ។", "feat2Title": "តម្លៃច្បាស់លាស់", "feat2Text": "អ្នកឃើញតម្លៃសរុបជាដុល្លារមុនពេលបង់ ហើយគ្មានថ្លៃលាក់កំបាំងទេ។", "feat3Title": "បង់ប្រាក់តាម KHQR", "feat3Text": "ស្កេនជាមួយ ABA, ACLEDA, Wing ឬកម្មវិធីធនាគារណាដែលគាំទ្រ KHQR។", "footerText": "© 2026 {store} · Telegram {telegram}", "footerAccept": "យើងទទួលការទូទាត់តាម", "trackTitle": "តាមដានការបញ្ជាទិញ", "trackHint": "បញ្ចូលលេខកូដបញ្ជាទិញរបស់អ្នក (ឧទាហរណ៍ NS-AB123) ដើម្បីមើលស្ថានភាព។", "trackPlaceholder": "NS-XXXXX", "trackButton": "ពិនិត្យ", "trackNotFound": "រកមិនឃើញការបញ្ជាទិញនេះទេ។ សូមពិនិត្យលេខកូដម្តងទៀត។", "trackEmpty": "មិនទាន់មានការបញ្ជាទិញនៅលើឧបករណ៍នេះទេ។", "trackLink": "តាមដានការបញ្ជាទិញ", "trackUpdated": "ធ្វើបច្ចុប្បន្នភាព {time}", "statusPending": "រង់ចាំការបង់ប្រាក់", "statusVerifying": "កំពុងពិនិត្យការបង់ប្រាក់", "statusPaid": "បានទទួលការបង់ប្រាក់ · កំពុងបញ្ចូល", "statusDelivered": "បានបញ្ចូលរួចរាល់", "statusRejected": "មិនទាន់ទទួលបានការបង់ប្រាក់", "robloxCheck": "ពិនិត្យឈ្មោះ", "robloxChecking": "កំពុងពិនិត្យ...", "robloxNotFound": "រកមិនឃើញឈ្មោះ Roblox នេះទេ។ សូមពិនិត្យអក្ខរាវិរុទ្ធឡើងវិញ។", "robloxUnavailable": "មិនអាចពិនិត្យជាមួយ Roblox ឥឡូវនេះបានទេ។ អ្នកអាចបន្តបាន សូមពិនិត្យឈ្មោះឱ្យច្បាស់។", "robloxMustCheck": "សូមចុច \"ពិនិត្យឈ្មោះ\" ដើម្បីបញ្ជាក់គណនី មុនពេលបន្ត។", "robloxFriends": "មិត្តភក្តិ", "robloxFollowers": "អ្នកតាមដាន", "robloxFollowing": "កំពុងតាមដាន"};   // built-in (Khmer) wording; your edits from /admin override it
+var TD = {"statusOpen": "កំពុងបើក", "statusClosed": "បិទ · បើកម៉ោង {time}", "heroTitle": "បញ្ចូលហ្គេមរបស់អ្នក ក្នុងប៉ុន្មាននាទី", "heroText": "ជ្រើសរើសហ្គេម ជ្រើសរើសកញ្ចប់ រួចបង់ប្រាក់តាម KHQR ពីកម្មវិធីធនាគារកម្ពុជាណាមួយ។ តម្លៃបង្ហាញជាដុល្លារអាមេរិកមុនពេលអ្នកបង់។", "heroButton": "ជ្រើសរើសហ្គេម", "gamesTitle": "ហ្គេមទាំងអស់", "countText": "{n} ផលិតផល", "loadingText": "កំពុងផ្ទុកហ្គេម…", "emptyText": "មិនទាន់មានហ្គេមទេ។ សូមត្រឡប់មកវិញនៅពេលក្រោយ។", "fromLabel": "ចាប់ពី", "cardButton": "បញ្ចូលប្រាក់", "soldOutLabel": "អស់ស្តុក", "step1Title": "1. ជ្រើសរើសកញ្ចប់", "step2Title": "2. ព័ត៌មានរបស់អ្នក", "summaryTitle": "សង្ខេបការបញ្ជាទិញ", "rowGame": "ហ្គេម", "rowPack": "កញ្ចប់", "rowAccount": "គណនី", "rowTotal": "សរុប", "rowRiel": "ជាប្រាក់រៀល", "payButton": "បង់ប្រាក់តាម KHQR", "payTitle": "ស្កេនដើម្បីបង់ប្រាក់", "payExactly": "សូមបង់ចំនួន", "orderCodeLabel": "លេខកូដបញ្ជាទិញ", "payNoteWho": "ឈ្មោះគណនីលើ QR៖ {name}។", "payNote": "បន្ទាប់ពីបង់ប្រាក់ សូមផ្ញើរូបថតអេក្រង់នៃការបង់ប្រាក់ និងលេខកូដបញ្ជាទិញទៅ Telegram។ យើងនឹងបញ្ចូលភ្លាមៗ នៅពេលបញ្ជាក់ការបង់ប្រាក់រួច។", "paidButton": "ខ្ញុំបានបង់ប្រាក់ហើយ", "paidSentMsg": "បានជូនដំណឹងទៅហាងហើយ! កំពុងបើក Telegram សូមភ្ជាប់រូបថតវិក្កយបត្រ ហើយផ្ញើ។", "telegramButton": "ផ្ញើរូបថតអេក្រង់ទៅ Telegram", "copyButton": "ចម្លងព័ត៌មានបញ្ជាទិញ", "copiedMsg": "បានចម្លងហើយ។ សូមបិទភ្ជាប់ក្នុង Telegram រួមជាមួយរូបថតអេក្រង់នៃការបង់ប្រាក់។", "copyFailMsg": "ចម្លងមិនបានទេ។ សូមជ្រើសរើសព័ត៌មាន ហើយចម្លងដោយដៃ។", "msgOrder": "{store} លេខបញ្ជាទិញ {code}", "msgGame": "ហ្គេម", "msgPack": "កញ្ចប់", "msgAccount": "គណនី", "msgTotal": "សរុប", "receiptAsk": "📎 សូមភ្ជាប់រូបថតអេក្រង់នៃការបង់ប្រាក់ (វិក្កយបត្រ) នៅខាងក្រោម។", "feat1Title": "រហ័ស", "feat1Text": "ការបញ្ជាទិញត្រូវបានដំណើរការភ្លាមៗ បន្ទាប់ពីបញ្ជាក់ការបង់ប្រាក់ ក្នុងម៉ោងបើកទ្វារ។", "feat2Title": "តម្លៃច្បាស់លាស់", "feat2Text": "អ្នកឃើញតម្លៃសរុបជាដុល្លារមុនពេលបង់ ហើយគ្មានថ្លៃលាក់កំបាំងទេ។", "feat3Title": "បង់ប្រាក់តាម KHQR", "feat3Text": "ស្កេនជាមួយ ABA, ACLEDA, Wing ឬកម្មវិធីធនាគារណាដែលគាំទ្រ KHQR។", "footerText": "© 2026 {store} · Telegram {telegram}", "footerAccept": "យើងទទួលការទូទាត់តាម", "trackTitle": "តាមដានការបញ្ជាទិញ", "trackHint": "បញ្ចូលលេខកូដបញ្ជាទិញរបស់អ្នក (ឧទាហរណ៍ NS-AB123) ដើម្បីមើលស្ថានភាព។", "trackPlaceholder": "NS-XXXXX", "trackButton": "ពិនិត្យ", "trackNotFound": "រកមិនឃើញការបញ្ជាទិញនេះទេ។ សូមពិនិត្យលេខកូដម្តងទៀត។", "trackEmpty": "មិនទាន់មានការបញ្ជាទិញនៅលើឧបករណ៍នេះទេ។", "trackLink": "តាមដានការបញ្ជាទិញ", "trackUpdated": "ធ្វើបច្ចុប្បន្នភាព {time}", "statusPending": "រង់ចាំការបង់ប្រាក់", "statusVerifying": "កំពុងពិនិត្យការបង់ប្រាក់", "statusPaid": "បានទទួលការបង់ប្រាក់ · កំពុងបញ្ចូល", "statusDelivered": "បានបញ្ចូលរួចរាល់", "statusRejected": "មិនទាន់ទទួលបានការបង់ប្រាក់", "robloxCheck": "ពិនិត្យឈ្មោះ", "robloxChecking": "កំពុងពិនិត្យ...", "robloxNotFound": "រកមិនឃើញឈ្មោះ Roblox នេះទេ។ សូមពិនិត្យអក្ខរាវិរុទ្ធឡើងវិញ។", "robloxUnavailable": "មិនអាចពិនិត្យជាមួយ Roblox ឥឡូវនេះបានទេ។ អ្នកអាចបន្តបាន សូមពិនិត្យឈ្មោះឱ្យច្បាស់។", "robloxMustCheck": "សូមចុច \"ពិនិត្យឈ្មោះ\" ដើម្បីបញ្ជាក់គណនី មុនពេលបន្ត។", "robloxFriends": "មិត្តភក្តិ", "robloxFollowers": "អ្នកតាមដាន", "robloxFollowing": "កំពុងតាមដាន", "acctTitle": "គណនី Roblox របស់អ្នក", "acctHint": "បញ្ចូលឈ្មោះអ្នកប្រើ Roblox ហើយចុចពិនិត្យ រួចជ្រើសរើសហ្គេមខាងក្រោម។", "acctLabel": "ឈ្មោះអ្នកប្រើ Roblox", "orderNeedsAcct": "សូមពិនិត្យឈ្មោះ Roblox របស់អ្នកនៅផ្នែកខាងលើជាមុន។"};   // built-in (Khmer) wording; your edits from /admin override it
 /* T("key", {name:value}) = your edited text, or the built-in one; {name} placeholders are filled in */
 function T(k,v){var o=(CFG&&CFG.settings&&CFG.settings.texts)||{};var s=o[k]||TD[k]||"";if(v)for(var n in v)s=s.split("{"+n+"}").join(v[n]);return s}
 
@@ -405,51 +424,64 @@ function choose(g){
     var l=el("label",null,fl.label);l.setAttribute("for","f-"+fl.key);
     var inp=el("input");inp.id="f-"+fl.key;inp.autocomplete="off";
     inp.setAttribute("inputmode",fl.key==="pid"||fl.key==="zone"?"numeric":"text");
-    inp.addEventListener("input",function(e){vals[fl.key]=e.target.value.trim();$("pay").hidden=true;if(isRbx(g,fl))rbxReset(fl.key);refresh()});
+    inp.addEventListener("input",function(e){vals[fl.key]=e.target.value.trim();$("pay").hidden=true;refresh()});
     l.appendChild(inp);
     if(!isRbx(g,fl)){f.appendChild(l);return}
-    var box=el("div","rbxbox");box.id="rbx-"+fl.key;box.appendChild(l);
-    var row=el("div","rbxrow"),btn=el("button","btn rbxbtn",T("robloxCheck"));btn.type="button";btn.id="rbxbtn-"+fl.key;
-    btn.addEventListener("click",function(){rbxCheck(fl.key)});
-    inp.addEventListener("keydown",function(e){if(e.key==="Enter"){e.preventDefault();rbxCheck(fl.key)}});
-    row.appendChild(btn);box.appendChild(row);
-    var msg=el("div","note");msg.id="rbxmsg-"+fl.key;msg.style.margin="6px 0 0";box.appendChild(msg);
-    var card=el("div","rbxcard");card.id="rbxcard-"+fl.key;card.hidden=true;box.appendChild(card);
+    var box=el("div","rbxbox");box.id="rbx-"+fl.key;box.appendChild(el("div","rbxlab",fl.label));
+    var v=el("div","rbxval");v.id="rbxval-"+fl.key;box.appendChild(v);
+    var ch=el("button","btn ghost rbxchg",T("robloxCheck"));ch.type="button";ch.addEventListener("click",function(){$("acct").scrollIntoView({behavior:"smooth",block:"start"});$("acctInput").focus()});box.appendChild(ch);
     f.appendChild(box);
-    var last="";try{last=localStorage.getItem("minnie-roblox")||""}catch(e){}
-    if(last){inp.value=last;vals[fl.key]=last;rbxCheck(fl.key,true)}
   });
-  refresh();
+  syncRbx();
   $("order").scrollIntoView({behavior:matchMedia("(prefers-reduced-motion:reduce)").matches?"auto":"smooth"});
 }
 function acct(){return cur?cur.fields.map(function(fl){return vals[fl.key]||""}).filter(Boolean).join(" / "):""}
-/* ---- Roblox username check: type the name, we look up the real account (avatar, friends...) ---- */
-var RBX={};
+/* ---- Roblox username check (one box at the top of the page; every Roblox game uses it) ---- */
+var RBX={},G={name:"",state:""};
 function isRbx(g,fl){return fl.roblox===true||(fl.roblox!==false&&/roblox|robux/i.test(g.name+" "+g.id+" "+fl.label))}
-function rbxReset(k){RBX[k]=null;var c=$("rbxcard-"+k),m=$("rbxmsg-"+k);if(c)c.hidden=true;if(m)m.textContent=(vals[k]||"").length>=3?T("robloxMustCheck"):""}
 function fmtN(n){return n==null?"-":Number(n).toLocaleString("en-US")}
-function rbxCard(k,d){
-  var c=$("rbxcard-"+k);c.textContent="";
+function gCard(d){
+  var c=$("acctCard");c.textContent="";
   if(d.avatar){var im=el("img");im.alt="";im.src=d.avatar;im.width=56;im.height=56;im.onerror=function(){im.remove()};c.appendChild(im)}
   var t=el("div","rbxtxt");t.appendChild(el("b",null,d.displayName));t.appendChild(el("div","rbxat","@"+d.name));
   var st=el("div","rbxstats");
   [["robloxFriends",d.friends],["robloxFollowers",d.followers],["robloxFollowing",d.following]].forEach(function(x){st.appendChild(el("span",null,fmtN(x[1])+" "+T(x[0])))});
   t.appendChild(st);c.appendChild(t);c.hidden=false;
 }
-function rbxCheck(k,quiet){
-  var name=(vals[k]||"").trim(),m=$("rbxmsg-"+k),b=$("rbxbtn-"+k);
-  if(!/^[A-Za-z0-9_]{3,20}$/.test(name)){RBX[k]=null;if(!quiet&&m)m.textContent=T("robloxNotFound");refresh();return}
+function syncRbx(){   // copy the checked name into the selected game's Roblox field(s)
+  if(cur)cur.fields.forEach(function(fl){
+    if(!isRbx(cur,fl))return;
+    vals[fl.key]=G.state?G.name:"";RBX[fl.key]=G.state==="ok"?{ok:true,name:G.name}:G.state==="unavailable"?{unavailable:true}:null;
+    var v=$("rbxval-"+fl.key),b=v&&v.parentNode.querySelector(".rbxchg");
+    if(v){v.textContent=G.state?"@"+G.name+(G.state==="ok"?" ✓":""):T("orderNeedsAcct");v.className="rbxval"+(G.state?"":" warn")}
+    if(b)b.hidden=!!G.state&&false;
+  });
+  refresh();
+}
+function gReset(){G.state="";$("acctCard").hidden=true;var n=$("acctInput").value.trim();$("acctMsg").textContent=n.length>=3?T("robloxMustCheck"):"";$("pay").hidden=true;syncRbx()}
+function gCheck(quiet){
+  var name=$("acctInput").value.trim(),m=$("acctMsg"),b=$("acctBtn");
+  if(!/^[A-Za-z0-9_]{3,20}$/.test(name)){G.state="";G.name="";if(!quiet)m.textContent=T("robloxNotFound");syncRbx();return}
   b.disabled=true;b.textContent=T("robloxChecking");m.textContent="";
   fetch("/api/roblox?u="+encodeURIComponent(name),{cache:"no-store"}).then(function(r){return r.json().then(function(d){return {s:r.status,d:d}})})
     .then(function(x){
-      if(vals[k]!==name)return;                     // the customer kept typing; ignore the old answer
-      if(x.s===200&&x.d.ok){RBX[k]={ok:true,name:x.d.name};vals[k]=x.d.name;var i=$("f-"+k);if(i)i.value=x.d.name;rbxCard(k,x.d);m.textContent="";try{localStorage.setItem("minnie-roblox",x.d.name)}catch(e){}}
-      else if(x.s===404){RBX[k]=null;$("rbxcard-"+k).hidden=true;if(!quiet)m.textContent=T("robloxNotFound")}
-      else{RBX[k]={unavailable:true};m.textContent=T("robloxUnavailable")}
-    }).catch(function(){RBX[k]={unavailable:true};m.textContent=T("robloxUnavailable")})
-    .then(function(){b.disabled=false;b.textContent=T("robloxCheck");refresh()});
+      if($("acctInput").value.trim()!==name)return;          // the customer kept typing; ignore the old answer
+      if(x.s===200&&x.d.ok){G={name:x.d.name,state:"ok"};$("acctInput").value=x.d.name;gCard(x.d);m.textContent="";try{localStorage.setItem("minnie-roblox",x.d.name)}catch(e){}}
+      else if(x.s===404){G={name:"",state:""};$("acctCard").hidden=true;if(!quiet)m.textContent=T("robloxNotFound")}
+      else{G={name:name,state:"unavailable"};m.textContent=T("robloxUnavailable")}
+    }).catch(function(){G={name:name,state:"unavailable"};m.textContent=T("robloxUnavailable")})
+    .then(function(){b.disabled=false;b.textContent=T("robloxCheck");syncRbx()});
 }
-function rbxName(){var n="";cur&&cur.fields.forEach(function(fl){if(!n&&isRbx(cur,fl)&&RBX[fl.key]&&RBX[fl.key].ok)n=RBX[fl.key].name});return n}
+$("acctInput").addEventListener("input",gReset);
+$("acctInput").addEventListener("keydown",function(e){if(e.key==="Enter"){e.preventDefault();gCheck()}});
+$("acctBtn").addEventListener("click",function(){gCheck()});
+var acctInit=false;
+function acctShow(){
+  var any=!!(CFG&&CFG.games.some(function(g){return g.fields.some(function(fl){return isRbx(g,fl)})}));
+  $("acct").hidden=!any;
+  if(any&&!acctInit){acctInit=true;var last="";try{last=localStorage.getItem("minnie-roblox")||""}catch(e){}if(last){$("acctInput").value=last;gCheck(true)}}
+}
+function rbxName(){return G.state==="ok"?G.name:""}
 function ready(){
   return cur&&pack&&cur.fields.every(function(fl){var n=(vals[fl.key]||"").length;
     if(isRbx(cur,fl))return n>=3&&RBX[fl.key]&&(RBX[fl.key].ok||RBX[fl.key].unavailable);
@@ -564,7 +596,7 @@ function apply(cfg){
   $("footText").textContent=T("footerText",{store:s.storeName,telegram:"@"+s.telegram});
   // if the customer is mid-order and the game changed, keep their selection only if it still exists
   if(cur){var still=cfg.games.filter(function(g){return g.id===cur.id&&!g.soldOut})[0];if(!still){cur=null;pack=null;$("order").hidden=true}else{var op=pack;cur=still;if(op){pack=still.packs.filter(function(x){return x.name===op.name&&x.usd===op.usd})[0]||null}}}
-  renderGrid();tick();trLoad();resumePending();
+  renderGrid();tick();trLoad();acctShow();resumePending();
 }
 function saved(){try{return JSON.parse(localStorage.getItem("minnie-cfg"))}catch(e){return null}}
 apply(saved()||DEFAULT_CFG);            // show something immediately
