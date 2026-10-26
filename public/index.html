@@ -161,12 +161,13 @@ h1,h2,h3{letter-spacing:0;line-height:1.35}
 body[data-view="track"] .vhome{display:none!important}
 body[data-view="home"] .vtrack{display:none!important}
 @media (min-width:900px){
-  .burger{display:none}
   .side{transform:none;box-shadow:none;z-index:25;padding-top:92px}
-  body{padding-left:250px}
+  body{padding-left:250px;transition:padding-left .22s ease}
+  body.sidehid{padding-left:0}
+  body.sidehid .side{transform:translateX(-102%)}
   .sidebk{display:none!important}
 }
-@media (prefers-reduced-motion:reduce){.side{transition:none}}
+@media (prefers-reduced-motion:reduce){.side,body{transition:none!important}}
 .rbxbox{grid-column:1/-1}
 .rbxcard[hidden]{display:none}
 .rbxbtn{width:100%;padding:10px 14px;margin-top:8px}
@@ -617,7 +618,14 @@ setInterval(function(){if(document.hidden||$("track").hidden||!Object.keys(TR).l
 
 /* ---- Menu + pages: Home and Tracking ---- */
 function setMenu(open){$("side").classList.toggle("open",open);$("sidebk").hidden=!open;$("burger").setAttribute("aria-expanded",open?"true":"false")}
-$("burger").addEventListener("click",function(){setMenu(!$("side").classList.contains("open"))});
+var wide=window.matchMedia("(min-width:900px)");
+function setWide(hid){document.body.classList.toggle("sidehid",hid);$("burger").setAttribute("aria-expanded",hid?"false":"true");try{localStorage.setItem("minnie-side",hid?"0":"1")}catch(e){}}
+try{if(localStorage.getItem("minnie-side")==="0")document.body.classList.add("sidehid")}catch(e){}
+$("burger").setAttribute("aria-expanded",wide.matches&&document.body.classList.contains("sidehid")?"false":wide.matches?"true":"false");
+$("burger").addEventListener("click",function(){
+  if(wide.matches)setWide(!document.body.classList.contains("sidehid"));      // PC: slide the menu away / back
+  else setMenu(!$("side").classList.contains("open"));                        // phone: slide it over the page
+});
 $("sidebk").addEventListener("click",function(){setMenu(false)});
 document.addEventListener("keydown",function(e){if(e.key==="Escape")setMenu(false)});
 $("side").addEventListener("click",function(e){if(e.target.closest("a"))setMenu(false)});
