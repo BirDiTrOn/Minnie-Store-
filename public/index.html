@@ -147,6 +147,26 @@ h1,h2,h3{letter-spacing:0;line-height:1.35}
 /* ---------- game card button (shown on phones) ---------- */
 .go{display:none}
 #qrBox[hidden]{display:none!important}
+/* ---------- left menu (slide-out on phones, fixed on wide screens) + separate pages ---------- */
+.hleft{display:flex;align-items:center;gap:8px;min-width:0}
+.burger{display:inline-grid;place-items:center;width:40px;height:40px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer;flex:none}
+.side{position:fixed;z-index:50;top:0;bottom:0;left:0;width:250px;max-width:82vw;background:var(--surface);border-right:1px solid var(--line);padding:calc(env(safe-area-inset-top,0px) + 74px) 12px 16px;display:flex;flex-direction:column;gap:6px;transform:translateX(-102%);transition:transform .22s ease;box-shadow:none}
+.side.open{transform:none;box-shadow:0 0 40px rgba(60,10,40,.28)}
+.sidebk{position:fixed;inset:0;z-index:45;background:rgba(40,12,30,.45)}
+.sidebk[hidden]{display:none}
+.sidelink{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:12px;text-decoration:none;color:var(--ink);font-weight:600}
+.sidelink[hidden]{display:none}
+.sidelink:hover{background:var(--soft)}
+.sidelink.on{background:var(--accent);color:var(--accent-ink)}
+body[data-view="track"] .vhome{display:none!important}
+body[data-view="home"] .vtrack{display:none!important}
+@media (min-width:900px){
+  .burger{display:none}
+  .side{transform:none;box-shadow:none;z-index:25;padding-top:92px}
+  body{padding-left:250px}
+  .sidebk{display:none!important}
+}
+@media (prefers-reduced-motion:reduce){.side{transition:none}}
 .rbxbox{grid-column:1/-1}
 .rbxcard[hidden]{display:none}
 .rbxbtn{width:100%;padding:10px 14px;margin-top:8px}
@@ -237,16 +257,22 @@ h1,h2,h3{letter-spacing:0;line-height:1.35}
 
 </style>
 </head>
-<body>
+<body data-view="home">
 <header class="top">
   <div class="wrap">
-    <a class="brand" href="#top"><img class="mark" src="/assets/minnie-profile.jpg" alt=""><span id="brandName">MINNIE STORE</span></a>
+    <div class="hleft"><button class="burger" id="burger" type="button" aria-label="Menu" aria-controls="side" aria-expanded="false"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+    <a class="brand" href="#/"><img class="mark" src="/assets/minnie-profile.jpg" alt=""><span id="brandName">MINNIE STORE</span></a></div>
     <span class="pill open" id="statusPill"><span class="dot"></span><span id="statusText">កំពុងបើក</span></span>
   </div>
 </header>
+<div class="sidebk" id="sidebk" hidden></div>
+<nav class="side" id="side" aria-label="Menu">
+  <a class="sidelink" id="navHome" href="#/"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8M5 10v10h5v-6h4v6h5V10"/></svg><span data-t="navHome">ទំព័រដើម</span></a>
+  <a class="sidelink" id="navTrack" href="#/track" hidden><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5v8l9 5 9-5zM3 8l9 5 9-5M12 13v8"/></svg><span data-t="navTrack">តាមដានការបញ្ជាទិញ</span></a>
+</nav>
 
 <main id="top">
-  <section class="hero">
+  <section class="hero vhome">
     <div class="wrap">
       <div class="pitch">
         <div class="intro">
@@ -261,7 +287,7 @@ h1,h2,h3{letter-spacing:0;line-height:1.35}
     </div>
   </section>
 
-  <section class="block" id="acct" hidden>
+  <section class="block vhome" id="acct" hidden>
     <div class="wrap">
       <div class="sec-head"><h2 data-t="acctTitle">គណនី Roblox របស់អ្នក</h2></div>
       <p class="note" style="margin:0 0 10px" data-t="acctHint">បញ្ចូលឈ្មោះអ្នកប្រើ Roblox ហើយចុចពិនិត្យ រួចជ្រើសរើសហ្គេមខាងក្រោម។</p>
@@ -275,14 +301,14 @@ h1,h2,h3{letter-spacing:0;line-height:1.35}
     </div>
   </section>
 
-  <section class="block" id="games">
+  <section class="block vhome" id="games">
     <div class="wrap">
       <div class="sec-head"><h2 data-t="gamesTitle">ហ្គេមទាំងអស់</h2><span id="count"></span></div>
       <div class="grid" id="grid"><div class="empty" data-t="loadingText">កំពុងផ្ទុកហ្គេម…</div></div>
     </div>
   </section>
 
-  <section class="block" id="order" hidden>
+  <section class="block vhome" id="order" hidden>
     <div class="wrap">
       <div class="order">
         <div>
@@ -319,7 +345,7 @@ h1,h2,h3{letter-spacing:0;line-height:1.35}
     </div>
   </section>
 
-  <section class="block" id="track" hidden>
+  <section class="block vtrack" id="track" hidden>
     <div class="wrap">
       <div class="sec-head"><h2 data-t="trackTitle">តាមដានការបញ្ជាទិញ</h2></div>
       <p class="note" style="margin:0 0 12px" data-t="trackHint">បញ្ចូលលេខកូដបញ្ជាទិញរបស់អ្នក (ឧទាហរណ៍ NS-AB123) ដើម្បីមើលស្ថានភាព។</p>
@@ -329,7 +355,7 @@ h1,h2,h3{letter-spacing:0;line-height:1.35}
     </div>
   </section>
 
-  <section class="block">
+  <section class="block vhome">
     <div class="wrap">
       <div class="trust">
         <div class="tr"><span class="ti t1"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg></span><div class="tx"><h3 data-t="feat1Title">រហ័ស</h3><p data-t="feat1Text">ការបញ្ជាទិញត្រូវបានដំណើរការភ្លាមៗ បន្ទាប់ពីបញ្ជាក់ការបង់ប្រាក់ ក្នុងម៉ោងបើកទ្វារ។</p></div></div>
@@ -354,7 +380,7 @@ h1,h2,h3{letter-spacing:0;line-height:1.35}
    so the store always opens. */
 var DEFAULT_CFG = JSON.parse(document.getElementById("default-config").textContent);
 var CFG = null;
-var TD = {"statusOpen": "កំពុងបើក", "statusClosed": "បិទ · បើកម៉ោង {time}", "heroTitle": "បញ្ចូលហ្គេមរបស់អ្នក ក្នុងប៉ុន្មាននាទី", "heroText": "ជ្រើសរើសហ្គេម ជ្រើសរើសកញ្ចប់ រួចបង់ប្រាក់តាម KHQR ពីកម្មវិធីធនាគារកម្ពុជាណាមួយ។ តម្លៃបង្ហាញជាដុល្លារអាមេរិកមុនពេលអ្នកបង់។", "heroButton": "ជ្រើសរើសហ្គេម", "gamesTitle": "ហ្គេមទាំងអស់", "countText": "{n} ផលិតផល", "loadingText": "កំពុងផ្ទុកហ្គេម…", "emptyText": "មិនទាន់មានហ្គេមទេ។ សូមត្រឡប់មកវិញនៅពេលក្រោយ។", "fromLabel": "ចាប់ពី", "cardButton": "បញ្ចូលប្រាក់", "soldOutLabel": "អស់ស្តុក", "step1Title": "1. ជ្រើសរើសកញ្ចប់", "step2Title": "2. ព័ត៌មានរបស់អ្នក", "summaryTitle": "សង្ខេបការបញ្ជាទិញ", "rowGame": "ហ្គេម", "rowPack": "កញ្ចប់", "rowAccount": "គណនី", "rowTotal": "សរុប", "rowRiel": "ជាប្រាក់រៀល", "payButton": "បង់ប្រាក់តាម KHQR", "payTitle": "ស្កេនដើម្បីបង់ប្រាក់", "payExactly": "សូមបង់ចំនួន", "orderCodeLabel": "លេខកូដបញ្ជាទិញ", "payNoteWho": "ឈ្មោះគណនីលើ QR៖ {name}។", "payNote": "បន្ទាប់ពីបង់ប្រាក់ សូមផ្ញើរូបថតអេក្រង់នៃការបង់ប្រាក់ និងលេខកូដបញ្ជាទិញទៅ Telegram។ យើងនឹងបញ្ចូលភ្លាមៗ នៅពេលបញ្ជាក់ការបង់ប្រាក់រួច។", "paidButton": "ខ្ញុំបានបង់ប្រាក់ហើយ", "paidSentMsg": "បានជូនដំណឹងទៅហាងហើយ! កំពុងបើក Telegram សូមភ្ជាប់រូបថតវិក្កយបត្រ ហើយផ្ញើ។", "telegramButton": "ផ្ញើរូបថតអេក្រង់ទៅ Telegram", "copyButton": "ចម្លងព័ត៌មានបញ្ជាទិញ", "copiedMsg": "បានចម្លងហើយ។ សូមបិទភ្ជាប់ក្នុង Telegram រួមជាមួយរូបថតអេក្រង់នៃការបង់ប្រាក់។", "copyFailMsg": "ចម្លងមិនបានទេ។ សូមជ្រើសរើសព័ត៌មាន ហើយចម្លងដោយដៃ។", "msgOrder": "{store} លេខបញ្ជាទិញ {code}", "msgGame": "ហ្គេម", "msgPack": "កញ្ចប់", "msgAccount": "គណនី", "msgTotal": "សរុប", "receiptAsk": "📎 សូមភ្ជាប់រូបថតអេក្រង់នៃការបង់ប្រាក់ (វិក្កយបត្រ) នៅខាងក្រោម។", "feat1Title": "រហ័ស", "feat1Text": "ការបញ្ជាទិញត្រូវបានដំណើរការភ្លាមៗ បន្ទាប់ពីបញ្ជាក់ការបង់ប្រាក់ ក្នុងម៉ោងបើកទ្វារ។", "feat2Title": "តម្លៃច្បាស់លាស់", "feat2Text": "អ្នកឃើញតម្លៃសរុបជាដុល្លារមុនពេលបង់ ហើយគ្មានថ្លៃលាក់កំបាំងទេ។", "feat3Title": "បង់ប្រាក់តាម KHQR", "feat3Text": "ស្កេនជាមួយ ABA, ACLEDA, Wing ឬកម្មវិធីធនាគារណាដែលគាំទ្រ KHQR។", "footerText": "© 2026 {store} · Telegram {telegram}", "footerAccept": "យើងទទួលការទូទាត់តាម", "trackTitle": "តាមដានការបញ្ជាទិញ", "trackHint": "បញ្ចូលលេខកូដបញ្ជាទិញរបស់អ្នក (ឧទាហរណ៍ NS-AB123) ដើម្បីមើលស្ថានភាព។", "trackPlaceholder": "NS-XXXXX", "trackButton": "ពិនិត្យ", "trackNotFound": "រកមិនឃើញការបញ្ជាទិញនេះទេ។ សូមពិនិត្យលេខកូដម្តងទៀត។", "trackEmpty": "មិនទាន់មានការបញ្ជាទិញនៅលើឧបករណ៍នេះទេ។", "trackLink": "តាមដានការបញ្ជាទិញ", "trackUpdated": "ធ្វើបច្ចុប្បន្នភាព {time}", "statusPending": "រង់ចាំការបង់ប្រាក់", "statusVerifying": "កំពុងពិនិត្យការបង់ប្រាក់", "statusPaid": "បានទទួលការបង់ប្រាក់ · កំពុងបញ្ចូល", "statusDelivered": "បានបញ្ចូលរួចរាល់", "statusRejected": "មិនទាន់ទទួលបានការបង់ប្រាក់", "robloxCheck": "ពិនិត្យឈ្មោះ", "robloxChecking": "កំពុងពិនិត្យ...", "robloxNotFound": "រកមិនឃើញឈ្មោះ Roblox នេះទេ។ សូមពិនិត្យអក្ខរាវិរុទ្ធឡើងវិញ។", "robloxUnavailable": "មិនអាចពិនិត្យជាមួយ Roblox ឥឡូវនេះបានទេ។ អ្នកអាចបន្តបាន សូមពិនិត្យឈ្មោះឱ្យច្បាស់។", "robloxMustCheck": "សូមចុច \"ពិនិត្យឈ្មោះ\" ដើម្បីបញ្ជាក់គណនី មុនពេលបន្ត។", "robloxFriends": "មិត្តភក្តិ", "robloxFollowers": "អ្នកតាមដាន", "robloxFollowing": "កំពុងតាមដាន", "acctTitle": "គណនី Roblox របស់អ្នក", "acctHint": "បញ្ចូលឈ្មោះអ្នកប្រើ Roblox ហើយចុចពិនិត្យ រួចជ្រើសរើសហ្គេមខាងក្រោម។", "acctLabel": "ឈ្មោះអ្នកប្រើ Roblox", "orderNeedsAcct": "សូមពិនិត្យឈ្មោះ Roblox របស់អ្នកនៅផ្នែកខាងលើជាមុន។"};   // built-in (Khmer) wording; your edits from /admin override it
+var TD = {"statusOpen": "កំពុងបើក", "statusClosed": "បិទ · បើកម៉ោង {time}", "heroTitle": "បញ្ចូលហ្គេមរបស់អ្នក ក្នុងប៉ុន្មាននាទី", "heroText": "ជ្រើសរើសហ្គេម ជ្រើសរើសកញ្ចប់ រួចបង់ប្រាក់តាម KHQR ពីកម្មវិធីធនាគារកម្ពុជាណាមួយ។ តម្លៃបង្ហាញជាដុល្លារអាមេរិកមុនពេលអ្នកបង់។", "heroButton": "ជ្រើសរើសហ្គេម", "gamesTitle": "ហ្គេមទាំងអស់", "countText": "{n} ផលិតផល", "loadingText": "កំពុងផ្ទុកហ្គេម…", "emptyText": "មិនទាន់មានហ្គេមទេ។ សូមត្រឡប់មកវិញនៅពេលក្រោយ។", "fromLabel": "ចាប់ពី", "cardButton": "បញ្ចូលប្រាក់", "soldOutLabel": "អស់ស្តុក", "step1Title": "1. ជ្រើសរើសកញ្ចប់", "step2Title": "2. ព័ត៌មានរបស់អ្នក", "summaryTitle": "សង្ខេបការបញ្ជាទិញ", "rowGame": "ហ្គេម", "rowPack": "កញ្ចប់", "rowAccount": "គណនី", "rowTotal": "សរុប", "rowRiel": "ជាប្រាក់រៀល", "payButton": "បង់ប្រាក់តាម KHQR", "payTitle": "ស្កេនដើម្បីបង់ប្រាក់", "payExactly": "សូមបង់ចំនួន", "orderCodeLabel": "លេខកូដបញ្ជាទិញ", "payNoteWho": "ឈ្មោះគណនីលើ QR៖ {name}។", "payNote": "បន្ទាប់ពីបង់ប្រាក់ សូមផ្ញើរូបថតអេក្រង់នៃការបង់ប្រាក់ និងលេខកូដបញ្ជាទិញទៅ Telegram។ យើងនឹងបញ្ចូលភ្លាមៗ នៅពេលបញ្ជាក់ការបង់ប្រាក់រួច។", "paidButton": "ខ្ញុំបានបង់ប្រាក់ហើយ", "paidSentMsg": "បានជូនដំណឹងទៅហាងហើយ! កំពុងបើក Telegram សូមភ្ជាប់រូបថតវិក្កយបត្រ ហើយផ្ញើ។", "telegramButton": "ផ្ញើរូបថតអេក្រង់ទៅ Telegram", "copyButton": "ចម្លងព័ត៌មានបញ្ជាទិញ", "copiedMsg": "បានចម្លងហើយ។ សូមបិទភ្ជាប់ក្នុង Telegram រួមជាមួយរូបថតអេក្រង់នៃការបង់ប្រាក់។", "copyFailMsg": "ចម្លងមិនបានទេ។ សូមជ្រើសរើសព័ត៌មាន ហើយចម្លងដោយដៃ។", "msgOrder": "{store} លេខបញ្ជាទិញ {code}", "msgGame": "ហ្គេម", "msgPack": "កញ្ចប់", "msgAccount": "គណនី", "msgTotal": "សរុប", "receiptAsk": "📎 សូមភ្ជាប់រូបថតអេក្រង់នៃការបង់ប្រាក់ (វិក្កយបត្រ) នៅខាងក្រោម។", "feat1Title": "រហ័ស", "feat1Text": "ការបញ្ជាទិញត្រូវបានដំណើរការភ្លាមៗ បន្ទាប់ពីបញ្ជាក់ការបង់ប្រាក់ ក្នុងម៉ោងបើកទ្វារ។", "feat2Title": "តម្លៃច្បាស់លាស់", "feat2Text": "អ្នកឃើញតម្លៃសរុបជាដុល្លារមុនពេលបង់ ហើយគ្មានថ្លៃលាក់កំបាំងទេ។", "feat3Title": "បង់ប្រាក់តាម KHQR", "feat3Text": "ស្កេនជាមួយ ABA, ACLEDA, Wing ឬកម្មវិធីធនាគារណាដែលគាំទ្រ KHQR។", "footerText": "© 2026 {store} · Telegram {telegram}", "footerAccept": "យើងទទួលការទូទាត់តាម", "trackTitle": "តាមដានការបញ្ជាទិញ", "trackHint": "បញ្ចូលលេខកូដបញ្ជាទិញរបស់អ្នក (ឧទាហរណ៍ NS-AB123) ដើម្បីមើលស្ថានភាព។", "trackPlaceholder": "NS-XXXXX", "trackButton": "ពិនិត្យ", "trackNotFound": "រកមិនឃើញការបញ្ជាទិញនេះទេ។ សូមពិនិត្យលេខកូដម្តងទៀត។", "trackEmpty": "មិនទាន់មានការបញ្ជាទិញនៅលើឧបករណ៍នេះទេ។", "trackLink": "តាមដានការបញ្ជាទិញ", "trackUpdated": "ធ្វើបច្ចុប្បន្នភាព {time}", "statusPending": "រង់ចាំការបង់ប្រាក់", "statusVerifying": "កំពុងពិនិត្យការបង់ប្រាក់", "statusPaid": "បានទទួលការបង់ប្រាក់ · កំពុងបញ្ចូល", "statusDelivered": "បានបញ្ចូលរួចរាល់", "statusRejected": "មិនទាន់ទទួលបានការបង់ប្រាក់", "robloxCheck": "ពិនិត្យឈ្មោះ", "robloxChecking": "កំពុងពិនិត្យ...", "robloxNotFound": "រកមិនឃើញឈ្មោះ Roblox នេះទេ។ សូមពិនិត្យអក្ខរាវិរុទ្ធឡើងវិញ។", "robloxUnavailable": "មិនអាចពិនិត្យជាមួយ Roblox ឥឡូវនេះបានទេ។ អ្នកអាចបន្តបាន សូមពិនិត្យឈ្មោះឱ្យច្បាស់។", "robloxMustCheck": "សូមចុច \"ពិនិត្យឈ្មោះ\" ដើម្បីបញ្ជាក់គណនី មុនពេលបន្ត។", "robloxFriends": "មិត្តភក្តិ", "robloxFollowers": "អ្នកតាមដាន", "robloxFollowing": "កំពុងតាមដាន", "acctTitle": "គណនី Roblox របស់អ្នក", "acctHint": "បញ្ចូលឈ្មោះអ្នកប្រើ Roblox ហើយចុចពិនិត្យ រួចជ្រើសរើសហ្គេមខាងក្រោម។", "acctLabel": "ឈ្មោះអ្នកប្រើ Roblox", "orderNeedsAcct": "សូមពិនិត្យឈ្មោះ Roblox របស់អ្នកនៅផ្នែកខាងលើជាមុន។", "navHome": "ទំព័រដើម", "navTrack": "តាមដានការបញ្ជាទិញ"};   // built-in (Khmer) wording; your edits from /admin override it
 /* T("key", {name:value}) = your edited text, or the built-in one; {name} placeholders are filled in */
 function T(k,v){var o=(CFG&&CFG.settings&&CFG.settings.texts)||{};var s=o[k]||TD[k]||"";if(v)for(var n in v)s=s.split("{"+n+"}").join(v[n]);return s}
 
@@ -576,6 +602,7 @@ function trFetch(code,quiet){
     .then(function(o){TR[o.code]=o;return true}).catch(function(){if(!quiet)$("trackMsg").textContent=T("trackNotFound");return false});
 }
 function trLoad(){
+  $("navTrack").hidden=!(CFG&&CFG.tracking);
   if(!CFG||!CFG.tracking){$("track").hidden=true;return}
   $("track").hidden=false;$("trackCode").placeholder=T("trackPlaceholder");
   var jobs=mine().map(function(c){return trFetch(c,true)});
@@ -585,8 +612,22 @@ $("trackForm").addEventListener("submit",function(e){
   e.preventDefault();$("trackMsg").textContent="";var c=$("trackCode").value.trim().toUpperCase();if(!c)return;
   trFetch(c).then(function(ok){if(ok){remember(c);$("trackCode").value="";trRender()}});
 });
-$("trackLinkBtn").addEventListener("click",function(){closePay();trLoad();setTimeout(function(){$("track").scrollIntoView({behavior:"smooth",block:"start"})},50)});
+$("trackLinkBtn").addEventListener("click",function(){closePay();if(location.hash==="#/track")route();else location.hash="#/track"});
 setInterval(function(){if(document.hidden||$("track").hidden||!Object.keys(TR).length)return;Promise.all(Object.keys(TR).map(function(c){return trFetch(c,true)})).then(trRender)},20000);
+
+/* ---- Menu + pages: Home and Tracking ---- */
+function setMenu(open){$("side").classList.toggle("open",open);$("sidebk").hidden=!open;$("burger").setAttribute("aria-expanded",open?"true":"false")}
+$("burger").addEventListener("click",function(){setMenu(!$("side").classList.contains("open"))});
+$("sidebk").addEventListener("click",function(){setMenu(false)});
+document.addEventListener("keydown",function(e){if(e.key==="Escape")setMenu(false)});
+$("side").addEventListener("click",function(e){if(e.target.closest("a"))setMenu(false)});
+function route(){
+  var tr=location.hash==="#/track";
+  document.body.setAttribute("data-view",tr?"track":"home");
+  $("navHome").classList.toggle("on",!tr);$("navTrack").classList.toggle("on",tr);
+  if(tr){trLoad();window.scrollTo(0,0)}
+}
+window.addEventListener("hashchange",route);
 
 /* ---- Load shop data ---- */
 function apply(cfg){
@@ -596,7 +637,7 @@ function apply(cfg){
   $("footText").textContent=T("footerText",{store:s.storeName,telegram:"@"+s.telegram});
   // if the customer is mid-order and the game changed, keep their selection only if it still exists
   if(cur){var still=cfg.games.filter(function(g){return g.id===cur.id&&!g.soldOut})[0];if(!still){cur=null;pack=null;$("order").hidden=true}else{var op=pack;cur=still;if(op){pack=still.packs.filter(function(x){return x.name===op.name&&x.usd===op.usd})[0]||null}}}
-  renderGrid();tick();trLoad();acctShow();resumePending();
+  renderGrid();tick();trLoad();acctShow();resumePending();route();
 }
 function saved(){try{return JSON.parse(localStorage.getItem("minnie-cfg"))}catch(e){return null}}
 apply(saved()||DEFAULT_CFG);            // show something immediately
