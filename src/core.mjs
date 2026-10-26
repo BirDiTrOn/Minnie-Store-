@@ -88,11 +88,6 @@ async function sbOrderGet(code) {
   if (!r.ok) throw new Error("orders read failed " + r.status);
   return (await r.json())[0] || null;
 }
-async function sbOrdersByCust(id) {
-  const r = await fetch(SB_URL() + "/rest/v1/orders?cust_id=eq." + encodeURIComponent(id) + "&order=created_at.desc&limit=15&select=*", { headers: sbHeaders() });
-  if (!r.ok) throw new Error("orders read failed " + r.status);
-  return r.json();
-}
 async function sbOrderInsert(row) {
   const r = await fetch(SB_URL() + "/rest/v1/orders?on_conflict=code", {
     method: "POST", headers: sbHeaders({ "content-type": "application/json", Prefer: "resolution=ignore-duplicates,return=minimal" }), body: JSON.stringify(row) });
@@ -204,39 +199,6 @@ async function tgCall(method, payload) {
 }
 const tgSend = (text, markup) => tgCall("sendMessage", { chat_id: ENV.TELEGRAM_CHAT_ID, text: String(text).slice(0, 3500), disable_web_page_preview: true, ...(markup ? { reply_markup: markup } : {}) });
 const tgSecret = async (env) => b64url(await hmac(await secret(env), "tg-webhook")).slice(0, 40);
-/* ---- customer login with Telegram (Login Widget): signed proof from Telegram -> our own 30-day customer token ---- */
-let botNameCache = "";
-async function botUsername() {
-  if (ENV.TELEGRAM_BOT_USERNAME) return String(ENV.TELEGRAM_BOT_USERNAME).replace(/^@/, "");
-  if (botNameCache || !ENV.TELEGRAM_BOT_TOKEN) return botNameCache;
-  try {
-    const api = (ENV.TELEGRAM_API || "https://api.telegram.org").replace(/\/+$/, "");
-    const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), 3000);
-    const d = await fetch(api + "/bot" + ENV.TELEGRAM_BOT_TOKEN + "/getMe", { signal: ctl.signal }).then((r) => r.json()); clearTimeout(t);
-    if (d && d.ok && d.result && d.result.username) botNameCache = d.result.username;
-  } catch (e) {}
-  return botNameCache;
-}
-const custKey = async (env) => new Uint8Array(await hmac(await secret(env), "customer-v1"));
-async function makeCustToken(env, u) {
-  const payload = b64url(enc.encode(JSON.stringify({ exp: Date.now() + 30 * 86400000, id: u.id, name: u.name, un: u.un })));
-  return payload + "." + b64url(await hmac(await custKey(env), payload));
-}
-async function readCustToken(env, t) {
-  const [payload, sig] = String(t || "").split(".");
-  if (!payload || !sig || !env.ADMIN_PASSWORD) return null;
-  if (!(await safeEq(b64url(await hmac(await custKey(env), payload)), sig))) return null;
-  try { const o = JSON.parse(new TextDecoder().decode(unb64url(payload))); return o.exp > Date.now() ? o : null; } catch (e) { return null; }
-}
-async function verifyTelegramLogin(env, d) {
-  if (!d || typeof d !== "object" || !env.TELEGRAM_BOT_TOKEN || !d.hash || !d.id) return false;
-  const check = Object.keys(d).filter((k) => k !== "hash").sort().map((k) => k + "=" + d[k]).join("\n");
-  const key = new Uint8Array(await crypto.subtle.digest("SHA-256", enc.encode(env.TELEGRAM_BOT_TOKEN)));
-  const mac = Array.from(new Uint8Array(await hmac(key, check)), (b) => b.toString(16).padStart(2, "0")).join("");
-  if (!(await safeEq(mac, String(d.hash).toLowerCase()))) return false;
-  return Date.now() / 1000 - Number(d.auth_date) < 86400;
-}
-const custLine = (c) => c ? "Telegram: " + (c.un ? "@" + c.un : c.name) + (c.un ? " (" + c.name + ")" : "") + " · id " + c.id : "Telegram: not logged in";
 const seen = new Map();   // best-effort rate limit + duplicate guard (per server instance)
 function throttled(key, limit, ms) {
   const now = Date.now(); const a = (seen.get(key) || []).filter((x) => now - x < ms);
@@ -258,7 +220,7 @@ export async function handle(req, env = {}) {
     // Public: what the storefront shows (hidden games removed)
     if (path === "/api/products" && m === "GET") {
       const cfg = await load();
-      return json({ ...cfg, games: cfg.games.filter((g) => !g.hidden), loginBot: await botUsername(), tracking: sbConfigured() });
+      return json({ ...cfg, games: cfg.games.filter((g) => !g.hidden), tracking: sbConfigured() });
     }
 
     // Safe diagnostics: says only whether settings are present (never their values)
@@ -270,7 +232,6 @@ export async function handle(req, env = {}) {
         supabaseKeySet: !!env.SUPABASE_SERVICE_KEY,
         telegramBotTokenSet: !!env.TELEGRAM_BOT_TOKEN,
         telegramChatIdSet: !!env.TELEGRAM_CHAT_ID,
-        telegramLoginBot: await botUsername(),
         ordersTableOk: await (async () => { if (!sbConfigured()) return false; try { await sbOrderGet("NS-00000"); return true; } catch (e) { return false; } })(),
         settingNamesSeen: Object.keys(env).filter((k) => /admin|supabase|telegram/i.test(k)).map((k) => JSON.stringify(k)),
       });
@@ -290,11 +251,10 @@ export async function handle(req, env = {}) {
       const p = g && g.packs[Math.floor(Number(body.pack))];
       if (!g || !p) return json({ error: "Unknown item" }, 400);
       const khr = p.khr || Math.round((p.usd * cfg.settings.khrRate) / 100) * 100;
-      const cust = await readCustToken(env, body.cust);
       const text = (event === "paid" ? "🟡 TO VERIFY: customer says they paid\nCheck your bank app, then tap a button below.\n\n" : "⏳ PENDING: customer opened the payment page\n\n") +
-        "Order: " + code + "\nGame: " + g.name + "\nPack: " + p.name + "\nAccount: " + (str(body.account, 120) || "-") + "\n" + custLine(cust) +
+        "Order: " + code + "\nGame: " + g.name + "\nPack: " + p.name + "\nAccount: " + (str(body.account, 120) || "-") +
         "\nTotal: $" + p.usd.toFixed(2) + " (" + khr.toLocaleString("en-US") + " ៛)";
-      await setOrderStatus(code, event === "paid" ? "verifying" : "pending", { game: g.name, pack: p.name, usd: p.usd, cust_id: cust ? cust.id : null });
+      await setOrderStatus(code, event === "paid" ? "verifying" : "pending", { game: g.name, pack: p.name, usd: p.usd });
       const r = await tgSend(text, event === "paid" ? { inline_keyboard: [[{ text: "✅ Payment received", callback_data: "ok:" + code }, { text: "❌ Not received", callback_data: "no:" + code }]] } : null);
       return json({ ok: true, sent: r.sent });
     }
@@ -320,17 +280,6 @@ export async function handle(req, env = {}) {
       return json({ ok: true });
     }
 
-    // Customer login: the browser sends what the Telegram Login Widget gave it; we check Telegram's signature
-    if (path === "/api/tglogin" && m === "POST") {
-      const ip = (req.headers.get("x-forwarded-for") || "").split(",")[0].trim() || "x";
-      if (throttled("login:" + ip, 15, 60000)) return json({ error: "Too many requests" }, 429);
-      const d = await req.json().catch(() => ({}));
-      if (!(await verifyTelegramLogin(env, d))) return json({ error: "Telegram login failed" }, 401);
-      const name = str([d.first_name, d.last_name].filter(Boolean).join(" "), 60) || "Customer";
-      const un = str(d.username, 40).replace(/[^\w]/g, "");
-      return json({ token: await makeCustToken(env, { id: String(d.id).replace(/\D/g, "").slice(0, 20), name, un }), name, username: un });
-    }
-
     // Public: look up one order by its code (only non-private fields are returned)
     if (path === "/api/track" && m === "GET") {
       const ip = (req.headers.get("x-forwarded-for") || "").split(",")[0].trim() || "x";
@@ -339,14 +288,6 @@ export async function handle(req, env = {}) {
       if (!/^NS-[A-Z0-9]{5}$/.test(code) || !sbConfigured()) return json({ error: "Not found" }, 404);
       let o = null; try { o = await sbOrderGet(code); } catch (e) {}
       return o ? json(publicOrder(o)) : json({ error: "Not found" }, 404);
-    }
-    // Logged-in customers: their own orders
-    if (path === "/api/myorders" && m === "POST") {
-      const body = await req.json().catch(() => ({}));
-      const c = await readCustToken(env, body.cust);
-      if (!c || !sbConfigured()) return json({ orders: [] });
-      let rows = []; try { rows = await sbOrdersByCust(c.id); } catch (e) {}
-      return json({ orders: rows.map(publicOrder) });
     }
 
     if (path === "/api/login" && m === "POST") {
