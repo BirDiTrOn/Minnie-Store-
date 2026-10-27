@@ -204,9 +204,18 @@ body[data-view="home"] .vtrack{display:none!important}
 .shead{position:relative;background:#e21b1b;color:#fff;text-align:center;padding:14px 44px;font-weight:800}
 .shead:before{content:"";position:absolute;top:6px;left:50%;width:44px;height:4px;border-radius:4px;background:rgba(255,255,255,.55);transform:translateX(-50%)}
 .shead .mclose{top:8px;background:rgba(255,255,255,.25);color:#fff}
-.sframe{border:0;width:100%;height:min(560px,68vh);background:#fff;display:block}
+.sqr{padding:16px 16px 4px;text-align:center;display:grid;gap:6px;justify-items:center;overflow:auto}
+.sqrs{font-size:13px;color:#555}
+.sqra{font-family:var(--f-display);font-size:30px;font-weight:800;color:#0b1b3a}
+.sqr img{width:min(280px,72vw);aspect-ratio:1;object-fit:contain}
+.sqrm{min-height:20px;font-size:13px;color:#777}
+.paybar{position:fixed;left:0;right:0;bottom:0;z-index:50;display:none;align-items:center;justify-content:space-between;gap:12px;padding:10px 16px calc(10px + env(safe-area-inset-bottom));background:var(--surface,#fff);border-top:1px solid var(--line,#eee);box-shadow:0 -6px 20px rgba(0,0,0,.12)}
+.paybar .pt{font-weight:700;font-size:15px}.paybar .pt b{color:var(--accent);font-size:20px;margin-left:4px;font-variant-numeric:tabular-nums}
+.paybar .btn{width:auto;white-space:nowrap;padding:12px 22px}
+.paybar.dim .btn{opacity:.55}
+@media(max-width:699px){.paybar.on{display:flex}body.hasbar{padding-bottom:84px}}
 .sfoot{padding:10px 14px 14px;display:grid;gap:8px;background:#fff}
-.sfoot a{text-align:center;font-size:13px;color:var(--muted,#777)}
+.sfoot a:not(.btn){text-align:center;font-size:13px;color:var(--muted,#777)}
 @media(min-width:700px){.sheet{align-items:center}.sbox{border-radius:22px;max-height:90vh}}
 .mbox{position:relative;background:#fff;border-radius:20px;width:min(380px,100%);max-height:94vh;overflow:auto;padding:20px 18px 18px;display:grid;gap:10px;justify-items:center;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.35)}
 .mbox h3{font-size:18px;margin:0 28px 0 0;align-self:start;justify-self:start}
@@ -355,10 +364,15 @@ body[data-view="home"] .vtrack{display:none!important}
           <div class="sheet" id="sheet" hidden role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
            <div class="sbox">
             <div class="shead"><span id="sheetTitle" data-t="sheetTitle">បង់ប្រាក់តាម KHQR</span><button class="mclose" id="sheetClose" type="button" aria-label="Close">&times;</button></div>
-            <iframe class="sframe" id="sframe" title="Payment" referrerpolicy="no-referrer-when-downgrade" allow="payment; clipboard-write"></iframe>
+            <div class="sqr">
+             <div class="sqrs" id="sqrStore"></div>
+             <div class="sqra" id="sqrAmt"></div>
+             <img id="sqrImg" alt="KHQR" hidden>
+             <div class="sqrm" id="sqrMsg"></div>
+            </div>
             <div class="sfoot">
-             <button class="btn" id="sheetPaid" type="button" data-t="paidButton">ខ្ញុំបានបង់ប្រាក់ហើយ</button>
-             <a id="sheetOpen" href="#" target="_blank" rel="noopener" data-t="sheetOpen">បើកទំព័របង់ប្រាក់</a>
+             <a class="btn" id="sheetApp" href="#" hidden data-t="abaOpen" style="text-decoration:none;text-align:center">បើកកម្មវិធី ABA ដើម្បីបង់ប្រាក់</a>
+             <button class="btn ghost" id="sheetPaid" type="button" data-t="paidButton">ខ្ញុំបានបង់ប្រាក់ហើយ</button>
             </div>
            </div>
           </div>
@@ -396,6 +410,7 @@ body[data-view="home"] .vtrack{display:none!important}
 </footer>
 
 <script id="default-config" type="application/json">{"version": 1, "settings": {"storeName": "Minnie Store", "telegram": "Lisaa_lisaz", "openHour": 7, "closeHour": 23, "khrRate": 4100, "qrCodes": [], "qrAccountName": "SIV NANN"}, "games": [{"id": "rbx-login", "name": "Robux (Login)", "tag": "ចូលគណនី", "sub": "យើងបញ្ចូលតាមរយៈគណនី Roblox របស់អ្នក។", "note": "ព័ត៌មានចូលគណនីត្រូវបានផ្ញើជាឯកជនតាម Telegram បន្ទាប់ពីបង់ប្រាក់ មិនមែនក្នុងទំព័រនេះទេ។", "color": "#e0332b", "icon": "/assets/robux.png", "glyph": "R$", "hidden": false, "soldOut": false, "fields": [{"key": "user", "label": "ឈ្មោះអ្នកប្រើ Roblox"}], "packs": [{"name": "80 Robux", "usd": 1.0, "khr": 4100}, {"name": "160 Robux", "usd": 1.9, "khr": 7800}, {"name": "240 Robux", "usd": 3.0, "khr": 12300}, {"name": "320 Robux", "usd": 3.8, "khr": 15500}, {"name": "500 Robux", "usd": 4.8, "khr": 19700}, {"name": "660 Robux", "usd": 6.6, "khr": 27000}, {"name": "740 Robux", "usd": 7.4, "khr": 30300}, {"name": "1,000 Robux", "usd": 9.4, "khr": 38500}, {"name": "1,500 Robux", "usd": 14.0, "khr": 57400}, {"name": "2,000 Robux", "usd": 18.0, "khr": 73800}, {"name": "2,500 Robux", "usd": 22.5, "khr": 92200}, {"name": "3,000 Robux", "usd": 27.0, "khr": 110700}, {"name": "5,000 Robux", "usd": 46.0, "khr": 188600}, {"name": "10,000 Robux", "usd": 90.0, "khr": 369000}]}, {"id": "rbx-send", "name": "Robux (Send)", "tag": "ផ្ញើ", "sub": "មិនចាំបាច់ប្រើពាក្យសម្ងាត់ទេ។ អ្នកទិញ game pass ដែលយើងរៀបចំឱ្យ។", "note": "យើងនឹងផ្ញើតំណ game pass ទៅអ្នកតាម Telegram បន្ទាប់ពីបង់ប្រាក់។", "color": "#c4580a", "icon": "/assets/robux.png", "glyph": "R$", "hidden": false, "soldOut": false, "fields": [{"key": "user", "label": "ឈ្មោះអ្នកប្រើ Roblox"}], "packs": [{"name": "100 Robux", "usd": 1.0}, {"name": "200 Robux", "usd": 2.0}, {"name": "500 Robux", "usd": 5.0}]}]}</script>
+<div class="paybar" id="paybar" aria-live="polite"><div class="pt"><span data-t="rowTotal">សរុប</span>:<b id="barTotal">$0.00</b></div><button class="btn" id="barPay" type="button" data-t="barPay">បង់ប្រាក់ឥឡូវនេះ</button></div>
 <script>
 if(window.top!==window.self){try{if(/[?&]paid=1\b/.test(location.search)){parent.postMessage({minnie:"paid"},location.origin);document.documentElement.innerHTML="<body style='font:16px sans-serif;text-align:center;padding:40px'>✓</body>";throw 0}}catch(e){if(e===0)throw e}}
 
@@ -404,7 +419,7 @@ if(window.top!==window.self){try{if(/[?&]paid=1\b/.test(location.search)){parent
    so the store always opens. */
 var DEFAULT_CFG = JSON.parse(document.getElementById("default-config").textContent);
 var CFG = null;
-var TD = {"statusOpen": "កំពុងបើក", "statusClosed": "បិទ · បើកម៉ោង {time}", "heroTitle": "បញ្ចូលហ្គេមរបស់អ្នក ក្នុងប៉ុន្មាននាទី", "heroText": "ជ្រើសរើសហ្គេម ជ្រើសរើសកញ្ចប់ រួចបង់ប្រាក់តាម KHQR ពីកម្មវិធីធនាគារកម្ពុជាណាមួយ។ តម្លៃបង្ហាញជាដុល្លារអាមេរិកមុនពេលអ្នកបង់។", "heroButton": "ជ្រើសរើសហ្គេម", "gamesTitle": "ហ្គេមទាំងអស់", "countText": "{n} ផលិតផល", "loadingText": "កំពុងផ្ទុកហ្គេម…", "emptyText": "មិនទាន់មានហ្គេមទេ។ សូមត្រឡប់មកវិញនៅពេលក្រោយ។", "fromLabel": "ចាប់ពី", "cardButton": "បញ្ចូលប្រាក់", "soldOutLabel": "អស់ស្តុក", "step1Title": "1. ជ្រើសរើសកញ្ចប់", "step2Title": "2. ព័ត៌មានរបស់អ្នក", "summaryTitle": "សង្ខេបការបញ្ជាទិញ", "rowGame": "ហ្គេម", "rowPack": "កញ្ចប់", "rowAccount": "គណនី", "rowTotal": "សរុប", "rowRiel": "ជាប្រាក់រៀល", "payButton": "បង់ប្រាក់តាម KHQR", "payTitle": "ស្កេនដើម្បីបង់ប្រាក់", "sheetTitle": "បង់ប្រាក់តាម KHQR", "sheetOpen": "បើកទំព័របង់ប្រាក់ (ប្រសិនបើមិនឃើញ QR)", "soldOutMsg": "សូមអភ័យទោស ទំនិញនេះអស់ស្តុកហើយ។", "payReturnTitle": "ការបង់ប្រាក់ជោគជ័យ! 🎉", "payReturnMsg": "យើងបានទទួលដំណឹងហើយ! យើងនឹងផ្ទៀងផ្ទាត់ និងបញ្ចូលភ្លាមៗ។ សូមផ្ញើរូបថតវិក្កយបត្រទៅ Telegram ខាងក្រោម។", "payExactly": "សូមបង់ចំនួន", "orderCodeLabel": "លេខកូដបញ្ជាទិញ", "payNoteWho": "ឈ្មោះគណនីលើ QR៖ {name}។", "payNote": "បន្ទាប់ពីបង់ប្រាក់ សូមផ្ញើរូបថតអេក្រង់នៃការបង់ប្រាក់ និងលេខកូដបញ្ជាទិញទៅ Telegram។ យើងនឹងបញ្ចូលភ្លាមៗ នៅពេលបញ្ជាក់ការបង់ប្រាក់រួច។", "paidButton": "ខ្ញុំបានបង់ប្រាក់ហើយ", "paidSentMsg": "បានជូនដំណឹងទៅហាងហើយ! កំពុងបើក Telegram សូមភ្ជាប់រូបថតវិក្កយបត្រ ហើយផ្ញើ។", "telegramButton": "ផ្ញើរូបថតអេក្រង់ទៅ Telegram", "copyButton": "ចម្លងព័ត៌មានបញ្ជាទិញ", "copiedMsg": "បានចម្លងហើយ។ សូមបិទភ្ជាប់ក្នុង Telegram រួមជាមួយរូបថតអេក្រង់នៃការបង់ប្រាក់។", "copyFailMsg": "ចម្លងមិនបានទេ។ សូមជ្រើសរើសព័ត៌មាន ហើយចម្លងដោយដៃ។", "msgOrder": "{store} លេខបញ្ជាទិញ {code}", "msgGame": "ហ្គេម", "msgPack": "កញ្ចប់", "msgAccount": "គណនី", "msgTotal": "សរុប", "receiptAsk": "📎 សូមភ្ជាប់រូបថតអេក្រង់នៃការបង់ប្រាក់ (វិក្កយបត្រ) នៅខាងក្រោម។", "feat1Title": "រហ័ស", "feat1Text": "ការបញ្ជាទិញត្រូវបានដំណើរការភ្លាមៗ បន្ទាប់ពីបញ្ជាក់ការបង់ប្រាក់ ក្នុងម៉ោងបើកទ្វារ។", "feat2Title": "តម្លៃច្បាស់លាស់", "feat2Text": "អ្នកឃើញតម្លៃសរុបជាដុល្លារមុនពេលបង់ ហើយគ្មានថ្លៃលាក់កំបាំងទេ។", "feat3Title": "បង់ប្រាក់តាម KHQR", "feat3Text": "ស្កេនជាមួយ ABA, ACLEDA, Wing ឬកម្មវិធីធនាគារណាដែលគាំទ្រ KHQR។", "footerText": "© 2026 {store} · Telegram {telegram}", "footerAccept": "យើងទទួលការទូទាត់តាម", "trackTitle": "តាមដានការបញ្ជាទិញ", "trackHint": "បញ្ចូលលេខកូដបញ្ជាទិញរបស់អ្នក (ឧទាហរណ៍ NS-AB123) ដើម្បីមើលស្ថានភាព។", "trackPlaceholder": "NS-XXXXX", "trackButton": "ពិនិត្យ", "trackNotFound": "រកមិនឃើញការបញ្ជាទិញនេះទេ។ សូមពិនិត្យលេខកូដម្តងទៀត។", "trackEmpty": "មិនទាន់មានការបញ្ជាទិញនៅលើឧបករណ៍នេះទេ។", "trackLink": "តាមដានការបញ្ជាទិញ", "trackUpdated": "ធ្វើបច្ចុប្បន្នភាព {time}", "statusPending": "រង់ចាំការបង់ប្រាក់", "statusVerifying": "កំពុងពិនិត្យការបង់ប្រាក់", "statusPaid": "បានទទួលការបង់ប្រាក់ · កំពុងបញ្ចូល", "statusDelivered": "បានបញ្ចូលរួចរាល់", "statusRejected": "មិនទាន់ទទួលបានការបង់ប្រាក់", "robloxCheck": "ពិនិត្យឈ្មោះ", "robloxChecking": "កំពុងពិនិត្យ...", "robloxNotFound": "រកមិនឃើញឈ្មោះ Roblox នេះទេ។ សូមពិនិត្យអក្ខរាវិរុទ្ធឡើងវិញ។", "robloxUnavailable": "មិនអាចពិនិត្យជាមួយ Roblox ឥឡូវនេះបានទេ។ អ្នកអាចបន្តបាន សូមពិនិត្យឈ្មោះឱ្យច្បាស់។", "robloxMustCheck": "សូមចុច \"ពិនិត្យឈ្មោះ\" ដើម្បីបញ្ជាក់គណនី មុនពេលបន្ត។", "robloxFriends": "មិត្តភក្តិ", "robloxFollowers": "អ្នកតាមដាន", "robloxFollowing": "កំពុងតាមដាន", "acctTitle": "គណនី Roblox របស់អ្នក", "acctHint": "បញ្ចូលឈ្មោះអ្នកប្រើ Roblox ហើយចុចពិនិត្យ រួចជ្រើសរើសហ្គេមខាងក្រោម។", "acctLabel": "ឈ្មោះអ្នកប្រើ Roblox", "orderNeedsAcct": "សូមពិនិត្យឈ្មោះ Roblox របស់អ្នកនៅផ្នែកខាងលើជាមុន។", "navHome": "ទំព័រដើម", "navTrack": "តាមដានការបញ្ជាទិញ"};   // built-in (Khmer) wording; your edits from /admin override it
+var TD = {"statusOpen": "កំពុងបើក", "statusClosed": "បិទ · បើកម៉ោង {time}", "heroTitle": "បញ្ចូលហ្គេមរបស់អ្នក ក្នុងប៉ុន្មាននាទី", "heroText": "ជ្រើសរើសហ្គេម ជ្រើសរើសកញ្ចប់ រួចបង់ប្រាក់តាម KHQR ពីកម្មវិធីធនាគារកម្ពុជាណាមួយ។ តម្លៃបង្ហាញជាដុល្លារអាមេរិកមុនពេលអ្នកបង់។", "heroButton": "ជ្រើសរើសហ្គេម", "gamesTitle": "ហ្គេមទាំងអស់", "countText": "{n} ផលិតផល", "loadingText": "កំពុងផ្ទុកហ្គេម…", "emptyText": "មិនទាន់មានហ្គេមទេ។ សូមត្រឡប់មកវិញនៅពេលក្រោយ។", "fromLabel": "ចាប់ពី", "cardButton": "បញ្ចូលប្រាក់", "soldOutLabel": "អស់ស្តុក", "step1Title": "1. ជ្រើសរើសកញ្ចប់", "step2Title": "2. ព័ត៌មានរបស់អ្នក", "summaryTitle": "សង្ខេបការបញ្ជាទិញ", "rowGame": "ហ្គេម", "rowPack": "កញ្ចប់", "rowAccount": "គណនី", "rowTotal": "សរុប", "rowRiel": "ជាប្រាក់រៀល", "payButton": "បង់ប្រាក់តាម KHQR", "payTitle": "ស្កេនដើម្បីបង់ប្រាក់", "sheetTitle": "បង់ប្រាក់តាម KHQR", "abaOpen": "បើកកម្មវិធី ABA ដើម្បីបង់ប្រាក់", "qrLoading": "កំពុងបង្កើត QR…", "qrFail": "មិនអាចបង្កើត QR បានទេ។ សូមព្យាយាមម្តងទៀត ឬទាក់ទងយើង។", "barPay": "បង់ប្រាក់ឥឡូវនេះ", "payReturnTitle": "ការបង់ប្រាក់ជោគជ័យ! 🎉", "payReturnMsg": "យើងបានទទួលដំណឹងហើយ! យើងនឹងផ្ទៀងផ្ទាត់ និងបញ្ចូលភ្លាមៗ។ សូមផ្ញើរូបថតវិក្កយបត្រទៅ Telegram ខាងក្រោម។", "payExactly": "សូមបង់ចំនួន", "orderCodeLabel": "លេខកូដបញ្ជាទិញ", "payNoteWho": "ឈ្មោះគណនីលើ QR៖ {name}។", "payNote": "បន្ទាប់ពីបង់ប្រាក់ សូមផ្ញើរូបថតអេក្រង់នៃការបង់ប្រាក់ និងលេខកូដបញ្ជាទិញទៅ Telegram។ យើងនឹងបញ្ចូលភ្លាមៗ នៅពេលបញ្ជាក់ការបង់ប្រាក់រួច។", "paidButton": "ខ្ញុំបានបង់ប្រាក់ហើយ", "paidSentMsg": "បានជូនដំណឹងទៅហាងហើយ! កំពុងបើក Telegram សូមភ្ជាប់រូបថតវិក្កយបត្រ ហើយផ្ញើ។", "telegramButton": "ផ្ញើរូបថតអេក្រង់ទៅ Telegram", "copyButton": "ចម្លងព័ត៌មានបញ្ជាទិញ", "copiedMsg": "បានចម្លងហើយ។ សូមបិទភ្ជាប់ក្នុង Telegram រួមជាមួយរូបថតអេក្រង់នៃការបង់ប្រាក់។", "copyFailMsg": "ចម្លងមិនបានទេ។ សូមជ្រើសរើសព័ត៌មាន ហើយចម្លងដោយដៃ។", "msgOrder": "{store} លេខបញ្ជាទិញ {code}", "msgGame": "ហ្គេម", "msgPack": "កញ្ចប់", "msgAccount": "គណនី", "msgTotal": "សរុប", "receiptAsk": "📎 សូមភ្ជាប់រូបថតអេក្រង់នៃការបង់ប្រាក់ (វិក្កយបត្រ) នៅខាងក្រោម។", "feat1Title": "រហ័ស", "feat1Text": "ការបញ្ជាទិញត្រូវបានដំណើរការភ្លាមៗ បន្ទាប់ពីបញ្ជាក់ការបង់ប្រាក់ ក្នុងម៉ោងបើកទ្វារ។", "feat2Title": "តម្លៃច្បាស់លាស់", "feat2Text": "អ្នកឃើញតម្លៃសរុបជាដុល្លារមុនពេលបង់ ហើយគ្មានថ្លៃលាក់កំបាំងទេ។", "feat3Title": "បង់ប្រាក់តាម KHQR", "feat3Text": "ស្កេនជាមួយ ABA, ACLEDA, Wing ឬកម្មវិធីធនាគារណាដែលគាំទ្រ KHQR។", "footerText": "© 2026 {store} · Telegram {telegram}", "footerAccept": "យើងទទួលការទូទាត់តាម", "trackTitle": "តាមដានការបញ្ជាទិញ", "trackHint": "បញ្ចូលលេខកូដបញ្ជាទិញរបស់អ្នក (ឧទាហរណ៍ NS-AB123) ដើម្បីមើលស្ថានភាព។", "trackPlaceholder": "NS-XXXXX", "trackButton": "ពិនិត្យ", "trackNotFound": "រកមិនឃើញការបញ្ជាទិញនេះទេ។ សូមពិនិត្យលេខកូដម្តងទៀត។", "trackEmpty": "មិនទាន់មានការបញ្ជាទិញនៅលើឧបករណ៍នេះទេ។", "trackLink": "តាមដានការបញ្ជាទិញ", "trackUpdated": "ធ្វើបច្ចុប្បន្នភាព {time}", "statusPending": "រង់ចាំការបង់ប្រាក់", "statusVerifying": "កំពុងពិនិត្យការបង់ប្រាក់", "statusPaid": "បានទទួលការបង់ប្រាក់ · កំពុងបញ្ចូល", "statusDelivered": "បានបញ្ចូលរួចរាល់", "statusRejected": "មិនទាន់ទទួលបានការបង់ប្រាក់", "robloxCheck": "ពិនិត្យឈ្មោះ", "robloxChecking": "កំពុងពិនិត្យ...", "robloxNotFound": "រកមិនឃើញឈ្មោះ Roblox នេះទេ។ សូមពិនិត្យអក្ខរាវិរុទ្ធឡើងវិញ។", "robloxUnavailable": "មិនអាចពិនិត្យជាមួយ Roblox ឥឡូវនេះបានទេ។ អ្នកអាចបន្តបាន សូមពិនិត្យឈ្មោះឱ្យច្បាស់។", "robloxMustCheck": "សូមចុច \"ពិនិត្យឈ្មោះ\" ដើម្បីបញ្ជាក់គណនី មុនពេលបន្ត។", "robloxFriends": "មិត្តភក្តិ", "robloxFollowers": "អ្នកតាមដាន", "robloxFollowing": "កំពុងតាមដាន", "acctTitle": "គណនី Roblox របស់អ្នក", "acctHint": "បញ្ចូលឈ្មោះអ្នកប្រើ Roblox ហើយចុចពិនិត្យ រួចជ្រើសរើសហ្គេមខាងក្រោម។", "acctLabel": "ឈ្មោះអ្នកប្រើ Roblox", "orderNeedsAcct": "សូមពិនិត្យឈ្មោះ Roblox របស់អ្នកនៅផ្នែកខាងលើជាមុន។", "navHome": "ទំព័រដើម", "navTrack": "តាមដានការបញ្ជាទិញ"};   // built-in (Khmer) wording; your edits from /admin override it
 /* T("key", {name:value}) = your edited text, or the built-in one; {name} placeholders are filled in */
 function T(k,v){var o=(CFG&&CFG.settings&&CFG.settings.texts)||{};var s=o[k]||TD[k]||"";if(v)for(var n in v)s=s.split("{"+n+"}").join(v[n]);return s}
 
@@ -552,7 +567,19 @@ function refresh(){
   $("sTotal").textContent=pack?money(pack.usd):"$0.00";
   $("sKhr").textContent=pack?khr(pack):"-";
   $("payBtn").disabled=!ready();
+  $("barTotal").textContent=pack?money(pack.usd):"$0.00";$("paybar").classList.toggle("dim",!ready());syncBar();
 }
+// phone: the total and the pay button stay at the bottom of the screen
+function syncBar(){
+  var on=$("pay").hidden&&$("sheet").hidden&&document.body.getAttribute("data-view")!=="track";   // always on screen on phones, even before a game is picked
+  $("paybar").classList.toggle("on",on);document.body.classList.toggle("hasbar",on);
+}
+$("barPay").addEventListener("click",function(){
+  if(!cur||$("order").hidden){var gm=$("games");if(gm&&gm.scrollIntoView)gm.scrollIntoView({behavior:"smooth",block:"start"});return}
+  if(ready()){$("payBtn").click();return}
+  var t=!pack?$("pkgs"):($("acct")&&!$("acct").hidden&&cur&&cur.fields.some(function(fl){return isRbx(cur,fl)})?$("acct"):$("fields"));   // show what is still missing
+  if(t&&t.scrollIntoView)t.scrollIntoView({behavior:"smooth",block:"center"});
+});
 function tgUrl(){return "https://t.me/"+CFG.settings.telegram+"?text="+encodeURIComponent(summaryText()+"\n\n"+T("receiptAsk"))}
 function clearPending(){try{localStorage.removeItem("minnie-pending")}catch(e){}}
 var resumed=false,RET=false;
@@ -604,6 +631,7 @@ function startPay(){
   qs.forEach(function(x){if(x.link&&x.usd!==""&&x.usd!=null&&!qp&&Math.abs(Number(x.usd)-pack.usd)<0.005)qp=x});
   $("tgBtn").href=tgUrl();$("copyMsg").textContent="";$("paidBtn").disabled=false;$("trackLinkBtn").hidden=!(CFG&&CFG.tracking);
   $("payNote").textContent=T("payNote");$("payTitle").textContent=T("payTitle");q.hidden=true;RET=false;
+  if(CFG.payway){remember(code);notify("new");payQr();return}   // ABA PayWay is connected: show a fresh QR here
   if(qp){remember(code);notify("new");
     try{localStorage.setItem("minnie-pending",JSON.stringify({code:code,game:cur.id,pack:cur.packs.indexOf(pack),vals:vals,rbx:rbxName(),ts:Date.now()}))}catch(e){}
     location.href=qp.link;return}   // ABA blocks its page inside other sites, so it opens in this window (openSheet() is kept for a QR we make ourselves)
@@ -622,18 +650,30 @@ $("paidBtn").addEventListener("click",function(){
   var w=null;try{w=window.open(tgUrl(),"_blank")}catch(e){}      // opens the shop's Telegram chat with the order details typed in
   if(!w)location.href=tgUrl();
 });
-function openSheet(u){$("sframe").src=u;$("sheetOpen").href=u;$("sheet").hidden=false;document.body.style.overflow="hidden"}
-function closeSheet(){$("sheet").hidden=true;$("sframe").src="about:blank";if($("pay").hidden)document.body.style.overflow=""}
+var PWT=null;
+function openSheet(){$("sqrImg").hidden=true;$("sqrImg").removeAttribute("src");$("sqrMsg").textContent=T("qrLoading");$("sheetApp").hidden=true;
+  $("sqrStore").textContent=CFG.settings.storeName;$("sqrAmt").textContent=money(pack.usd);$("sheet").hidden=false;syncBar();document.body.style.overflow="hidden"}
+function closeSheet(){clearInterval(PWT);$("sheet").hidden=true;syncBar();if($("pay").hidden)document.body.style.overflow=""}
+function payDone(){closeSheet();RET=true;clearPending();$("paidBtn").disabled=true;$("payTitle").textContent=T("payReturnTitle");$("copyMsg").textContent=T("payReturnMsg");openPay()}
+// ABA PayWay: ask the shop for a QR with this order's exact price, then watch until ABA says it is paid
+function payQr(){
+  openSheet();var myCode=code,tries=0;
+  fetch("/api/pay",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({code:code,game:cur.id,pack:cur.packs.indexOf(pack)})})
+    .then(function(r){return r.json()}).then(function(r){
+      if(!r||!r.ok||!r.qrImage)throw 0;
+      $("sqrImg").src=r.qrImage;$("sqrImg").hidden=false;$("sqrMsg").textContent="";
+      if(r.deeplink&&/Android|iPhone|iPad/i.test(navigator.userAgent)){$("sheetApp").href=r.deeplink;$("sheetApp").hidden=false}
+      PWT=setInterval(function(){
+        if(code!==myCode||++tries>450){clearInterval(PWT);return}
+        fetch("/api/pay-status?code="+encodeURIComponent(myCode),{cache:"no-store"}).then(function(x){return x.json()}).then(function(x){if(x&&x.paid&&code===myCode)payDone()}).catch(function(){});
+      },4000);
+    }).catch(function(){$("sqrMsg").textContent=T("qrFail")});
+}
 $("sheetClose").addEventListener("click",function(){closeSheet();clearPending()});
 $("sheet").addEventListener("click",function(e){if(e.target===$("sheet")){closeSheet();clearPending()}});
 $("sheetPaid").addEventListener("click",function(){closeSheet();openPay();$("paidBtn").click()});
-// the bank page sent the customer back to /?paid=1 inside the pop-up: finish here instead
-window.addEventListener("message",function(e){
-  if(e.origin!==location.origin||!e.data||e.data.minnie!=="paid"||$("sheet").hidden)return;
-  closeSheet();RET=true;notify("paid");clearPending();$("paidBtn").disabled=true;$("payTitle").textContent=T("payReturnTitle");$("copyMsg").textContent=T("payReturnMsg");openPay();
-});
-function openPay(){$("pay").hidden=false;document.body.style.overflow="hidden";$("payClose").focus()}
-function closePay(){RET=false;clearPending();$("pay").hidden=true;document.body.style.overflow=""}
+function openPay(){$("pay").hidden=false;syncBar();document.body.style.overflow="hidden";$("payClose").focus()}
+function closePay(){RET=false;clearPending();$("pay").hidden=true;syncBar();document.body.style.overflow=""}
 $("payClose").addEventListener("click",closePay);
 $("pay").addEventListener("click",function(e){if(e.target===$("pay"))closePay()});
 document.addEventListener("keydown",function(e){if(e.key!=="Escape")return;if(!$("sheet").hidden){closeSheet();clearPending()}else if(!$("pay").hidden)closePay()});
@@ -696,7 +736,7 @@ document.addEventListener("keydown",function(e){if(e.key==="Escape")setMenu(fals
 $("side").addEventListener("click",function(e){if(e.target.closest("a"))setMenu(false)});
 function route(){
   var tr=location.hash==="#/track";
-  document.body.setAttribute("data-view",tr?"track":"home");
+  document.body.setAttribute("data-view",tr?"track":"home");syncBar();
   $("navHome").classList.toggle("on",!tr);$("navTrack").classList.toggle("on",tr);
   if(tr){trLoad();window.scrollTo(0,0)}
 }

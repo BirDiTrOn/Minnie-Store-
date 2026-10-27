@@ -249,6 +249,54 @@ async function tgUpsertOrder(code, status, opts = {}) {
   if (r.sent && id) await kvSet("tg:" + code, { m: id, b: body });
   return { sent: r.sent };
 }
+/* ---------- ABA PayWay: a fresh KHQR for every order, and automatic "paid" ---------- */
+const pwReady = () => !!(ENV.PAYWAY_MERCHANT_ID && ENV.PAYWAY_API_KEY);
+const pwBase = () => (ENV.PAYWAY_BASE || "https://checkout.payway.com.kh").replace(/\/+$/, "");
+const pwTime = () => new Date().toISOString().replace(/[-:T]/g, "").slice(0, 14);   // UTC YYYYMMDDHHmmss
+const b64 = (s) => btoa(String.fromCharCode(...enc.encode(s)));
+async function pwHash(parts) {
+  const key = await crypto.subtle.importKey("raw", enc.encode(ENV.PAYWAY_API_KEY), { name: "HMAC", hash: "SHA-512" }, false, ["sign"]);
+  const sig = await crypto.subtle.sign("HMAC", key, enc.encode(parts.join("")));
+  return btoa(String.fromCharCode(...new Uint8Array(sig)));
+}
+async function pwPost(path, body) {
+  const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), 9000);
+  try {
+    const r = await fetch(pwBase() + "/api/payment-gateway/v1/payments/" + path, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body), signal: ctl.signal });
+    return await r.json().catch(() => ({}));
+  } catch (e) { return { status: { code: "net", message: "Could not reach ABA PayWay." } }; } finally { clearTimeout(t); }
+}
+/* ask ABA for a KHQR for this order (amount in USD, exactly the pack price) */
+async function pwCreateQr(code, usd, origin) {
+  const f = { req_time: pwTime(), merchant_id: ENV.PAYWAY_MERCHANT_ID, tran_id: code, amount: usd, purchase_type: "purchase", payment_option: "abapay_khqr",
+    callback_url: b64(origin + "/api/payway-callback"), currency: "USD", lifetime: 30, qr_image_template: "template3_color" };
+  f.hash = await pwHash([f.req_time, f.merchant_id, f.tran_id, String(f.amount), "", "", "", "", "", f.purchase_type, f.payment_option, f.callback_url, "", f.currency, "", "", "", String(f.lifetime), f.qr_image_template]);
+  const d = await pwPost("generate-qr", f);
+  if (d.status && String(d.status.code) === "0" && d.qrImage) return { ok: true, qrImage: d.qrImage, deeplink: d.abapay_deeplink || "", qrString: d.qrString || "" };
+  return { ok: false, error: "ABA PayWay said: " + str((d.status && (d.status.message || d.status.code)) || "no answer", 120) };
+}
+/* ask ABA whether this order was really paid (never trust the browser or the callback alone) */
+async function pwIsPaid(code, usd) {
+  const time = pwTime();
+  const d = await pwPost("check-transaction-2", { req_time: time, merchant_id: ENV.PAYWAY_MERCHANT_ID, tran_id: code, hash: await pwHash([time, ENV.PAYWAY_MERCHANT_ID, code]) });
+  const x = d && d.data;
+  if (!x || Number(x.payment_status_code) !== 0) return false;
+  const paid = Number(x.original_amount ?? x.total_amount ?? x.payment_amount);
+  return Number.isFinite(paid) && Math.abs(paid - Number(usd)) < 0.011;
+}
+/* if ABA says the order is paid, mark it paid and update its Telegram message; returns true when paid */
+async function pwSync(code) {
+  if (!pwReady() || !sbConfigured()) return false;
+  let o = null; try { o = await sbOrderGet(code); } catch (e) { return false; }
+  if (!o) return false;
+  if (o.status === "paid" || o.status === "delivered") return true;
+  if (o.status === "rejected") return false;
+  if (!(await pwIsPaid(code, o.usd))) return false;
+  await setOrderStatus(code, "paid");
+  const when = new Date().toLocaleString("en-GB", { timeZone: "Asia/Phnom_Penh", hour12: false, day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
+  await tgUpsertOrder(code, "paid", { by: { who: "ABA PayWay (automatic)", when } });
+  return true;
+}
 const tgSecret = async (env) => b64url(await hmac(await secret(env), "tg-webhook")).slice(0, 40);
 /* ---------- Roblox username check (public Roblox web APIs; the browser can't call them directly) ---------- */
 async function rbxGet(host, path, init) {
@@ -292,7 +340,7 @@ export async function handle(req, env = {}) {
     // Public: what the storefront shows (hidden games removed)
     if (path === "/api/products" && m === "GET") {
       const cfg = await load();
-      return json({ ...cfg, games: cfg.games.filter((g) => !g.hidden), tracking: sbConfigured() });
+      return json({ ...cfg, games: cfg.games.filter((g) => !g.hidden), tracking: sbConfigured(), payway: pwReady() });
     }
 
     // Safe diagnostics: says only whether settings are present (never their values)
@@ -304,8 +352,10 @@ export async function handle(req, env = {}) {
         supabaseKeySet: !!env.SUPABASE_SERVICE_KEY,
         telegramBotTokenSet: !!env.TELEGRAM_BOT_TOKEN,
         telegramChatIdSet: !!env.TELEGRAM_CHAT_ID,
+        paywayMerchantIdSet: !!env.PAYWAY_MERCHANT_ID,
+        paywayApiKeySet: !!env.PAYWAY_API_KEY,
         ordersTableOk: await (async () => { if (!sbConfigured()) return false; try { await sbOrderGet("NS-00000"); return true; } catch (e) { return false; } })(),
-        settingNamesSeen: Object.keys(env).filter((k) => /admin|supabase|telegram/i.test(k)).map((k) => JSON.stringify(k)),
+        settingNamesSeen: Object.keys(env).filter((k) => /admin|supabase|telegram|payway/i.test(k)).map((k) => JSON.stringify(k)),
       });
     }
 
@@ -349,6 +399,7 @@ export async function handle(req, env = {}) {
       const msgBody = "Order: " + code + "\nGame: " + g.name + "\nPack: " + p.name + "\nAccount: " + (str(body.account, 120) || "-") + rbxLine +
         "\nTotal: $" + p.usd.toFixed(2) + " (" + khr.toLocaleString("en-US") + " ៛)";
       await setOrderStatus(code, event === "paid" ? "verifying" : "pending", { game: g.name, pack: p.name, usd: p.usd });
+      if (event === "paid" && sbConfigured()) { try { const cur = await sbOrderGet(code); if (cur && (cur.status === "paid" || cur.status === "delivered")) return json({ ok: true, sent: false }); } catch (e) { /* ignore */ } }
       // "new" sends the order's one message; "paid" edits that same message (a new one only if the first is missing)
       const r = await tgUpsertOrder(code, event === "paid" ? "verifying" : "pending", { body: msgBody });
       return json({ ok: true, sent: r.sent });
@@ -382,7 +433,41 @@ export async function handle(req, env = {}) {
       const code = str(url.searchParams.get("code"), 12).toUpperCase();
       if (!/^NS-[A-Z0-9]{5}$/.test(code) || !sbConfigured()) return json({ error: "Not found" }, 404);
       let o = null; try { o = await sbOrderGet(code); } catch (e) {}
+      if (o && pwReady() && (o.status === "pending" || o.status === "verifying") && !throttled("pw:" + code, 1, 5000)) {
+        if (await pwSync(code)) { try { o = await sbOrderGet(code); } catch (e) {} }
+      }
       return o ? json(publicOrder(o)) : json({ error: "Not found" }, 404);
+    }
+
+    // ABA PayWay: a KHQR with the exact price for one order
+    if (path === "/api/pay" && m === "POST") {
+      if (!pwReady()) return json({ error: "ABA PayWay is not set up" }, 503);
+      const ip = (req.headers.get("x-forwarded-for") || "").split(",")[0].trim() || "x";
+      if (throttled("pay:" + ip, 12, 60000)) return json({ error: "Too many requests" }, 429);
+      const body = await req.json().catch(() => ({}));
+      const code = str(body.code, 12);
+      if (!/^NS-[A-Z0-9]{5}$/.test(code)) return json({ error: "Bad order code" }, 400);
+      const cfg = await load();
+      const g = cfg.games.find((x) => x.id === str(body.game, 60));
+      const p = g && g.packs[Math.floor(Number(body.pack))];
+      if (!g || !p || !(p.usd >= 0.01)) return json({ error: "Unknown item" }, 400);
+      const r = await pwCreateQr(code, p.usd, url.origin);
+      return r.ok ? json({ ok: true, qrImage: r.qrImage, deeplink: r.deeplink, usd: p.usd }) : json({ ok: false, error: r.error }, 502);
+    }
+    // the store asks this every few seconds while the QR is on screen
+    if (path === "/api/pay-status" && m === "GET") {
+      const ip = (req.headers.get("x-forwarded-for") || "").split(",")[0].trim() || "x";
+      if (throttled("pays:" + ip, 60, 60000)) return json({ error: "Too many requests" }, 429);
+      const code = str(url.searchParams.get("code"), 12).toUpperCase();
+      if (!/^NS-[A-Z0-9]{5}$/.test(code)) return json({ paid: false });
+      return json({ paid: await pwSync(code) });
+    }
+    // ABA calls this when a payment is made; we still ask ABA to confirm before marking anything paid
+    if (path === "/api/payway-callback" && m === "POST") {
+      const d = await req.json().catch(() => ({}));
+      const code = str(d && d.tran_id, 12);
+      if (/^NS-[A-Z0-9]{5}$/.test(code)) await pwSync(code);
+      return json({ ok: true });
     }
 
     if (path === "/api/login" && m === "POST") {
