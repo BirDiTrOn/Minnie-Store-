@@ -404,7 +404,7 @@ if(window.top!==window.self){try{if(/[?&]paid=1\b/.test(location.search)){parent
    so the store always opens. */
 var DEFAULT_CFG = JSON.parse(document.getElementById("default-config").textContent);
 var CFG = null;
-var TD = {"statusOpen": "កំពុងបើក", "statusClosed": "បិទ · បើកម៉ោង {time}", "heroTitle": "បញ្ចូលហ្គេមរបស់អ្នក ក្នុងប៉ុន្មាននាទី", "heroText": "ជ្រើសរើសហ្គេម ជ្រើសរើសកញ្ចប់ រួចបង់ប្រាក់តាម KHQR ពីកម្មវិធីធនាគារកម្ពុជាណាមួយ។ តម្លៃបង្ហាញជាដុល្លារអាមេរិកមុនពេលអ្នកបង់។", "heroButton": "ជ្រើសរើសហ្គេម", "gamesTitle": "ហ្គេមទាំងអស់", "countText": "{n} ផលិតផល", "loadingText": "កំពុងផ្ទុកហ្គេម…", "emptyText": "មិនទាន់មានហ្គេមទេ។ សូមត្រឡប់មកវិញនៅពេលក្រោយ។", "fromLabel": "ចាប់ពី", "cardButton": "បញ្ចូលប្រាក់", "soldOutLabel": "អស់ស្តុក", "step1Title": "1. ជ្រើសរើសកញ្ចប់", "step2Title": "2. ព័ត៌មានរបស់អ្នក", "summaryTitle": "សង្ខេបការបញ្ជាទិញ", "rowGame": "ហ្គេម", "rowPack": "កញ្ចប់", "rowAccount": "គណនី", "rowTotal": "សរុប", "rowRiel": "ជាប្រាក់រៀល", "payButton": "បង់ប្រាក់តាម KHQR", "payTitle": "ស្កេនដើម្បីបង់ប្រាក់", "sheetTitle": "បង់ប្រាក់តាម KHQR", "sheetOpen": "បើកទំព័របង់ប្រាក់ (ប្រសិនបើមិនឃើញ QR)", "payReturnTitle": "ការបង់ប្រាក់ជោគជ័យ! 🎉", "payReturnMsg": "យើងបានទទួលដំណឹងហើយ! យើងនឹងផ្ទៀងផ្ទាត់ និងបញ្ចូលភ្លាមៗ។ សូមផ្ញើរូបថតវិក្កយបត្រទៅ Telegram ខាងក្រោម។", "payExactly": "សូមបង់ចំនួន", "orderCodeLabel": "លេខកូដបញ្ជាទិញ", "payNoteWho": "ឈ្មោះគណនីលើ QR៖ {name}។", "payNote": "បន្ទាប់ពីបង់ប្រាក់ សូមផ្ញើរូបថតអេក្រង់នៃការបង់ប្រាក់ និងលេខកូដបញ្ជាទិញទៅ Telegram។ យើងនឹងបញ្ចូលភ្លាមៗ នៅពេលបញ្ជាក់ការបង់ប្រាក់រួច។", "paidButton": "ខ្ញុំបានបង់ប្រាក់ហើយ", "paidSentMsg": "បានជូនដំណឹងទៅហាងហើយ! កំពុងបើក Telegram សូមភ្ជាប់រូបថតវិក្កយបត្រ ហើយផ្ញើ។", "telegramButton": "ផ្ញើរូបថតអេក្រង់ទៅ Telegram", "copyButton": "ចម្លងព័ត៌មានបញ្ជាទិញ", "copiedMsg": "បានចម្លងហើយ។ សូមបិទភ្ជាប់ក្នុង Telegram រួមជាមួយរូបថតអេក្រង់នៃការបង់ប្រាក់។", "copyFailMsg": "ចម្លងមិនបានទេ។ សូមជ្រើសរើសព័ត៌មាន ហើយចម្លងដោយដៃ។", "msgOrder": "{store} លេខបញ្ជាទិញ {code}", "msgGame": "ហ្គេម", "msgPack": "កញ្ចប់", "msgAccount": "គណនី", "msgTotal": "សរុប", "receiptAsk": "📎 សូមភ្ជាប់រូបថតអេក្រង់នៃការបង់ប្រាក់ (វិក្កយបត្រ) នៅខាងក្រោម។", "feat1Title": "រហ័ស", "feat1Text": "ការបញ្ជាទិញត្រូវបានដំណើរការភ្លាមៗ បន្ទាប់ពីបញ្ជាក់ការបង់ប្រាក់ ក្នុងម៉ោងបើកទ្វារ។", "feat2Title": "តម្លៃច្បាស់លាស់", "feat2Text": "អ្នកឃើញតម្លៃសរុបជាដុល្លារមុនពេលបង់ ហើយគ្មានថ្លៃលាក់កំបាំងទេ។", "feat3Title": "បង់ប្រាក់តាម KHQR", "feat3Text": "ស្កេនជាមួយ ABA, ACLEDA, Wing ឬកម្មវិធីធនាគារណាដែលគាំទ្រ KHQR។", "footerText": "© 2026 {store} · Telegram {telegram}", "footerAccept": "យើងទទួលការទូទាត់តាម", "trackTitle": "តាមដានការបញ្ជាទិញ", "trackHint": "បញ្ចូលលេខកូដបញ្ជាទិញរបស់អ្នក (ឧទាហរណ៍ NS-AB123) ដើម្បីមើលស្ថានភាព។", "trackPlaceholder": "NS-XXXXX", "trackButton": "ពិនិត្យ", "trackNotFound": "រកមិនឃើញការបញ្ជាទិញនេះទេ។ សូមពិនិត្យលេខកូដម្តងទៀត។", "trackEmpty": "មិនទាន់មានការបញ្ជាទិញនៅលើឧបករណ៍នេះទេ។", "trackLink": "តាមដានការបញ្ជាទិញ", "trackUpdated": "ធ្វើបច្ចុប្បន្នភាព {time}", "statusPending": "រង់ចាំការបង់ប្រាក់", "statusVerifying": "កំពុងពិនិត្យការបង់ប្រាក់", "statusPaid": "បានទទួលការបង់ប្រាក់ · កំពុងបញ្ចូល", "statusDelivered": "បានបញ្ចូលរួចរាល់", "statusRejected": "មិនទាន់ទទួលបានការបង់ប្រាក់", "robloxCheck": "ពិនិត្យឈ្មោះ", "robloxChecking": "កំពុងពិនិត្យ...", "robloxNotFound": "រកមិនឃើញឈ្មោះ Roblox នេះទេ។ សូមពិនិត្យអក្ខរាវិរុទ្ធឡើងវិញ។", "robloxUnavailable": "មិនអាចពិនិត្យជាមួយ Roblox ឥឡូវនេះបានទេ។ អ្នកអាចបន្តបាន សូមពិនិត្យឈ្មោះឱ្យច្បាស់។", "robloxMustCheck": "សូមចុច \"ពិនិត្យឈ្មោះ\" ដើម្បីបញ្ជាក់គណនី មុនពេលបន្ត។", "robloxFriends": "មិត្តភក្តិ", "robloxFollowers": "អ្នកតាមដាន", "robloxFollowing": "កំពុងតាមដាន", "acctTitle": "គណនី Roblox របស់អ្នក", "acctHint": "បញ្ចូលឈ្មោះអ្នកប្រើ Roblox ហើយចុចពិនិត្យ រួចជ្រើសរើសហ្គេមខាងក្រោម។", "acctLabel": "ឈ្មោះអ្នកប្រើ Roblox", "orderNeedsAcct": "សូមពិនិត្យឈ្មោះ Roblox របស់អ្នកនៅផ្នែកខាងលើជាមុន។", "navHome": "ទំព័រដើម", "navTrack": "តាមដានការបញ្ជាទិញ"};   // built-in (Khmer) wording; your edits from /admin override it
+var TD = {"statusOpen": "កំពុងបើក", "statusClosed": "បិទ · បើកម៉ោង {time}", "heroTitle": "បញ្ចូលហ្គេមរបស់អ្នក ក្នុងប៉ុន្មាននាទី", "heroText": "ជ្រើសរើសហ្គេម ជ្រើសរើសកញ្ចប់ រួចបង់ប្រាក់តាម KHQR ពីកម្មវិធីធនាគារកម្ពុជាណាមួយ។ តម្លៃបង្ហាញជាដុល្លារអាមេរិកមុនពេលអ្នកបង់។", "heroButton": "ជ្រើសរើសហ្គេម", "gamesTitle": "ហ្គេមទាំងអស់", "countText": "{n} ផលិតផល", "loadingText": "កំពុងផ្ទុកហ្គេម…", "emptyText": "មិនទាន់មានហ្គេមទេ។ សូមត្រឡប់មកវិញនៅពេលក្រោយ។", "fromLabel": "ចាប់ពី", "cardButton": "បញ្ចូលប្រាក់", "soldOutLabel": "អស់ស្តុក", "step1Title": "1. ជ្រើសរើសកញ្ចប់", "step2Title": "2. ព័ត៌មានរបស់អ្នក", "summaryTitle": "សង្ខេបការបញ្ជាទិញ", "rowGame": "ហ្គេម", "rowPack": "កញ្ចប់", "rowAccount": "គណនី", "rowTotal": "សរុប", "rowRiel": "ជាប្រាក់រៀល", "payButton": "បង់ប្រាក់តាម KHQR", "payTitle": "ស្កេនដើម្បីបង់ប្រាក់", "sheetTitle": "បង់ប្រាក់តាម KHQR", "sheetOpen": "បើកទំព័របង់ប្រាក់ (ប្រសិនបើមិនឃើញ QR)", "soldOutMsg": "សូមអភ័យទោស ទំនិញនេះអស់ស្តុកហើយ។", "payReturnTitle": "ការបង់ប្រាក់ជោគជ័យ! 🎉", "payReturnMsg": "យើងបានទទួលដំណឹងហើយ! យើងនឹងផ្ទៀងផ្ទាត់ និងបញ្ចូលភ្លាមៗ។ សូមផ្ញើរូបថតវិក្កយបត្រទៅ Telegram ខាងក្រោម។", "payExactly": "សូមបង់ចំនួន", "orderCodeLabel": "លេខកូដបញ្ជាទិញ", "payNoteWho": "ឈ្មោះគណនីលើ QR៖ {name}។", "payNote": "បន្ទាប់ពីបង់ប្រាក់ សូមផ្ញើរូបថតអេក្រង់នៃការបង់ប្រាក់ និងលេខកូដបញ្ជាទិញទៅ Telegram។ យើងនឹងបញ្ចូលភ្លាមៗ នៅពេលបញ្ជាក់ការបង់ប្រាក់រួច។", "paidButton": "ខ្ញុំបានបង់ប្រាក់ហើយ", "paidSentMsg": "បានជូនដំណឹងទៅហាងហើយ! កំពុងបើក Telegram សូមភ្ជាប់រូបថតវិក្កយបត្រ ហើយផ្ញើ។", "telegramButton": "ផ្ញើរូបថតអេក្រង់ទៅ Telegram", "copyButton": "ចម្លងព័ត៌មានបញ្ជាទិញ", "copiedMsg": "បានចម្លងហើយ។ សូមបិទភ្ជាប់ក្នុង Telegram រួមជាមួយរូបថតអេក្រង់នៃការបង់ប្រាក់។", "copyFailMsg": "ចម្លងមិនបានទេ។ សូមជ្រើសរើសព័ត៌មាន ហើយចម្លងដោយដៃ។", "msgOrder": "{store} លេខបញ្ជាទិញ {code}", "msgGame": "ហ្គេម", "msgPack": "កញ្ចប់", "msgAccount": "គណនី", "msgTotal": "សរុប", "receiptAsk": "📎 សូមភ្ជាប់រូបថតអេក្រង់នៃការបង់ប្រាក់ (វិក្កយបត្រ) នៅខាងក្រោម។", "feat1Title": "រហ័ស", "feat1Text": "ការបញ្ជាទិញត្រូវបានដំណើរការភ្លាមៗ បន្ទាប់ពីបញ្ជាក់ការបង់ប្រាក់ ក្នុងម៉ោងបើកទ្វារ។", "feat2Title": "តម្លៃច្បាស់លាស់", "feat2Text": "អ្នកឃើញតម្លៃសរុបជាដុល្លារមុនពេលបង់ ហើយគ្មានថ្លៃលាក់កំបាំងទេ។", "feat3Title": "បង់ប្រាក់តាម KHQR", "feat3Text": "ស្កេនជាមួយ ABA, ACLEDA, Wing ឬកម្មវិធីធនាគារណាដែលគាំទ្រ KHQR។", "footerText": "© 2026 {store} · Telegram {telegram}", "footerAccept": "យើងទទួលការទូទាត់តាម", "trackTitle": "តាមដានការបញ្ជាទិញ", "trackHint": "បញ្ចូលលេខកូដបញ្ជាទិញរបស់អ្នក (ឧទាហរណ៍ NS-AB123) ដើម្បីមើលស្ថានភាព។", "trackPlaceholder": "NS-XXXXX", "trackButton": "ពិនិត្យ", "trackNotFound": "រកមិនឃើញការបញ្ជាទិញនេះទេ។ សូមពិនិត្យលេខកូដម្តងទៀត។", "trackEmpty": "មិនទាន់មានការបញ្ជាទិញនៅលើឧបករណ៍នេះទេ។", "trackLink": "តាមដានការបញ្ជាទិញ", "trackUpdated": "ធ្វើបច្ចុប្បន្នភាព {time}", "statusPending": "រង់ចាំការបង់ប្រាក់", "statusVerifying": "កំពុងពិនិត្យការបង់ប្រាក់", "statusPaid": "បានទទួលការបង់ប្រាក់ · កំពុងបញ្ចូល", "statusDelivered": "បានបញ្ចូលរួចរាល់", "statusRejected": "មិនទាន់ទទួលបានការបង់ប្រាក់", "robloxCheck": "ពិនិត្យឈ្មោះ", "robloxChecking": "កំពុងពិនិត្យ...", "robloxNotFound": "រកមិនឃើញឈ្មោះ Roblox នេះទេ។ សូមពិនិត្យអក្ខរាវិរុទ្ធឡើងវិញ។", "robloxUnavailable": "មិនអាចពិនិត្យជាមួយ Roblox ឥឡូវនេះបានទេ។ អ្នកអាចបន្តបាន សូមពិនិត្យឈ្មោះឱ្យច្បាស់។", "robloxMustCheck": "សូមចុច \"ពិនិត្យឈ្មោះ\" ដើម្បីបញ្ជាក់គណនី មុនពេលបន្ត។", "robloxFriends": "មិត្តភក្តិ", "robloxFollowers": "អ្នកតាមដាន", "robloxFollowing": "កំពុងតាមដាន", "acctTitle": "គណនី Roblox របស់អ្នក", "acctHint": "បញ្ចូលឈ្មោះអ្នកប្រើ Roblox ហើយចុចពិនិត្យ រួចជ្រើសរើសហ្គេមខាងក្រោម។", "acctLabel": "ឈ្មោះអ្នកប្រើ Roblox", "orderNeedsAcct": "សូមពិនិត្យឈ្មោះ Roblox របស់អ្នកនៅផ្នែកខាងលើជាមុន។", "navHome": "ទំព័រដើម", "navTrack": "តាមដានការបញ្ជាទិញ"};   // built-in (Khmer) wording; your edits from /admin override it
 /* T("key", {name:value}) = your edited text, or the built-in one; {name} placeholders are filled in */
 function T(k,v){var o=(CFG&&CFG.settings&&CFG.settings.texts)||{};var s=o[k]||TD[k]||"";if(v)for(var n in v)s=s.split("{"+n+"}").join(v[n]);return s}
 
@@ -433,11 +433,11 @@ function renderGrid(){
   games.forEach(function(g){
     var b=el("button","game");b.type="button";b.dataset.id=g.id;b.setAttribute("aria-pressed",cur&&cur.id===g.id?"true":"false");
     b.style.setProperty("--c",g.color);
-    if(g.soldOut)b.disabled=true;
+    if(gSold(g))b.disabled=true;
     var art=el("div","art");
     if(g.icon){var im=el("img","ico");im.alt="";im.src=g.icon;im.loading="lazy";art.appendChild(im)}
     else art.appendChild(el("b",null,g.glyph||g.name.charAt(0)));
-    if(g.soldOut)art.appendChild(el("i","soldout",T("soldOutLabel")));
+    if(gSold(g))art.appendChild(el("i","soldout",T("soldOutLabel")));
     else if(g.tag)art.appendChild(el("i",null,g.tag));
     var info=el("div","gi");info.appendChild(el("h3",null,g.name));
     if(g.packs.length){
@@ -445,7 +445,7 @@ function renderGrid(){
       var sm=el("small",null,T("fromLabel")+" ");sm.appendChild(el("span","from",money(low)));info.appendChild(sm);
     }
     b.appendChild(art);b.appendChild(info);
-    b.appendChild(el("span","go",g.soldOut?T("soldOutLabel"):T("cardButton")));
+    b.appendChild(el("span","go",gSold(g)?T("soldOutLabel"):T("cardButton")));
     b.addEventListener("click",function(){choose(g)});
     grid.appendChild(b);
   });
@@ -453,22 +453,29 @@ function renderGrid(){
 
 /* ---- Order flow ---- */
 var cur=null, pack=null, vals={}, code="";
-function choose(g){
-  cur=g;pack=null;vals={};code="";
-  document.querySelectorAll(".game").forEach(function(e){e.setAttribute("aria-pressed",e.dataset.id===g.id?"true":"false")});
-  $("order").hidden=false;
-  $("oTitle").textContent=g.name;$("oSub").textContent=g.sub;$("oNote").textContent=g.note;
-  $("pay").hidden=true;$("copyMsg").textContent="";
+function pUnits(p){var n=Math.round(Number(p.units)||0);if(n>0)return n;var m=String(p.name||"").replace(/[, ]/g,"").match(/\d+/);return Math.max(1,m?parseInt(m[0],10):1)}
+function pSold(g,p){return typeof g.stock==="number"&&g.stock<pUnits(p)}
+function gSold(g){return !!g.soldOut||(typeof g.stock==="number"&&(g.stock<=0||(g.packs.length>0&&g.packs.every(function(p){return pSold(g,p)}))))}
+function renderPk(g){
   var pk=$("pkgs");pk.textContent="";
   g.packs.forEach(function(p){
-    var b=el("button","pkg");b.type="button";b.setAttribute("aria-pressed","false");
-    b.appendChild(el("strong",null,p.name));b.appendChild(el("span",null,money(p.usd)+" · "+khr(p)));
+    var b=el("button","pkg");b.type="button";b.setAttribute("aria-pressed",p===pack?"true":"false");
+    b.appendChild(el("strong",null,p.name));b.appendChild(el("span",null,pSold(g,p)?T("soldOutLabel"):money(p.usd)+" · "+khr(p)));
+    if(pSold(g,p))b.disabled=true;
     b.addEventListener("click",function(){
       pack=p;pk.querySelectorAll(".pkg").forEach(function(x){x.setAttribute("aria-pressed","false")});
       b.setAttribute("aria-pressed","true");$("pay").hidden=true;refresh();
     });
     pk.appendChild(b);
   });
+}
+function choose(g){
+  cur=g;pack=null;vals={};code="";
+  document.querySelectorAll(".game").forEach(function(e){e.setAttribute("aria-pressed",e.dataset.id===g.id?"true":"false")});
+  $("order").hidden=false;
+  $("oTitle").textContent=g.name;$("oSub").textContent=g.sub;$("oNote").textContent=g.note;
+  $("pay").hidden=true;$("copyMsg").textContent="";
+  renderPk(g);
   var f=$("fields");f.textContent="";RBX={};
   g.fields.forEach(function(fl){
     var l=el("label",null,fl.label);l.setAttribute("for","f-"+fl.key);
@@ -576,6 +583,21 @@ $("payBtn").addEventListener("click",function(){
   if(!ready())return;
   var chars="ABCDEFGHJKLMNPQRSTUVWXYZ23456789";code="NS-";
   for(var i=0;i<5;i++)code+=chars[Math.floor(Math.random()*chars.length)];
+  if(typeof cur.stock!=="number")return startPay();
+  // limited stock: the shop reserves one first; if it just ran out the customer is told instead
+  var pb=this;pb.disabled=true;
+  fetch("/api/order",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({event:"new",rbx:rbxName(),code:code,game:cur.id,pack:cur.packs.indexOf(pack),account:acct()})})
+    .then(function(r){return r.json()}).catch(function(){return {}})
+    .then(function(r){
+      if(r&&r.soldOut){
+        alert(T("soldOutMsg"));
+        fetch("/api/products",{cache:"no-store"}).then(function(x){return x.json()}).then(function(c){try{localStorage.setItem("minnie-cfg",JSON.stringify(c))}catch(e){}apply(c)}).catch(function(){});
+        return;
+      }
+      pb.disabled=false;startPay();
+    });
+});
+function startPay(){
   $("code").textContent=code;$("payAmt").textContent=money(pack.usd)+" ("+khr(pack)+")";
   var q=$("qrBox");q.textContent="";
   var qs=CFG.settings.qrCodes||[],qp=null;
@@ -590,7 +612,7 @@ $("payBtn").addEventListener("click",function(){
   $("payNote").textContent=(who?T("payNoteWho",{name:who})+" ":"")+T("payNote");
   $("tgBtn").href=tgUrl();
   $("copyMsg").textContent="";$("paidBtn").disabled=false;remember(code);$("trackLinkBtn").hidden=!(CFG&&CFG.tracking);openPay();
-});
+}
 function notify(ev){
   try{fetch("/api/order",{method:"POST",keepalive:true,headers:{"content-type":"application/json"},
     body:JSON.stringify({event:ev,rbx:rbxName(),code:code,game:cur.id,pack:cur.packs.indexOf(pack),account:acct()})}).catch(function(){})}catch(e){}
@@ -688,7 +710,7 @@ function apply(cfg){
   if(RET)$("payTitle").textContent=T("payReturnTitle");
   $("footText").textContent=T("footerText",{store:s.storeName,telegram:"@"+s.telegram});
   // if the customer is mid-order and the game changed, keep their selection only if it still exists
-  if(cur){var still=cfg.games.filter(function(g){return g.id===cur.id&&!g.soldOut})[0];if(!still){cur=null;pack=null;$("order").hidden=true}else{var op=pack;cur=still;if(op){pack=still.packs.filter(function(x){return x.name===op.name&&x.usd===op.usd})[0]||null}}}
+  if(cur){var still=cfg.games.filter(function(g){return g.id===cur.id&&!gSold(g)})[0];if(!still){cur=null;pack=null;$("order").hidden=true}else{var op=pack;cur=still;if(op){pack=still.packs.filter(function(x){return x.name===op.name&&x.usd===op.usd})[0]||null;if(pack&&pSold(cur,pack))pack=null;renderPk(cur);refresh()}}}
   renderGrid();tick();trLoad();acctShow();resumePending();route();
 }
 function saved(){try{return JSON.parse(localStorage.getItem("minnie-cfg"))}catch(e){return null}}

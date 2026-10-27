@@ -108,12 +108,19 @@ async function setOrderStatus(code, status, base) {
     if (o.status === status) return;
     // customer "I have paid" may only move a pending order forward; owner decisions always apply
     if (status === "verifying" && o.status !== "pending") return;
+    if (status === "rejected" && o.status !== "rejected") {   // give the item back to the stock
+      try {
+        const cfg = await load(); const g = cfg.games.find((x) => x.name === o.game); const p = g && g.packs.find((x) => x.name === o.pack && Number(x.usd) === Number(o.usd));
+        if (g && p && typeof g.stock === "number") { g.stock += packUnits(p); await sbSaveConfig(cfg); }
+      } catch (e) { /* ignore */ }
+    }
     await sbOrderPatch(code, { status, history: [...(o.history || []), { s: status, t: now }], updated_at: now });
   } catch (e) { /* ignore */ }
 }
 const publicOrder = (o) => ({ code: o.code, game: o.game, pack: o.pack, usd: Number(o.usd), status: o.status, created: o.created_at, updated: o.updated_at, history: o.history || [] });
 
 /* ---------- validation: never trust the client ---------- */
+const packUnits = (p) => Math.max(1, Math.round(Number(p.units) || 0) || parseInt(String(p.name || "").replace(/[, ]/g, "").match(/\d+/)?.[0] || "1", 10) || 1);
 const str = (v, max) => String(v ?? "").replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, "").trim().slice(0, max);
 const num = (v, min, max, dflt) => { const n = Number(v); return Number.isFinite(n) ? Math.min(max, Math.max(min, n)) : dflt; };
 const imgUrl = (v) => { const s = str(v, 300); return /^\/(assets|api\/img)\/[\w.\-\/]+$/.test(s) ? s : ""; };
@@ -152,6 +159,7 @@ function clean(input) {
       const out = { name: str(p.name, 60), usd: Math.round(num(p.usd, 0, 100000, 0) * 100) / 100 };
       const k = Math.round(num(p.khr, 0, 1e9, 0));
       if (k > 0) out.khr = k;
+      const un = Math.round(num(p.units, 0, 1e9, 0)); if (un > 0) out.units = un;   // how much of the game's stock one purchase uses (empty = the number in the pack name)
       if (!out.name) throw new Error("A pack in " + str(g.name, 40) + " has no name");
       return out;
     });
@@ -171,6 +179,7 @@ function clean(input) {
       glyph: str(g.glyph, 4),
       hidden: !!g.hidden,
       soldOut: !!g.soldOut,
+      ...(g.stock !== null && g.stock !== undefined && g.stock !== "" ? { stock: Math.round(num(g.stock, 0, 1e9, 0)) } : {}),   // total left; no value = unlimited
       fields,
       packs,
     };
@@ -325,6 +334,12 @@ export async function handle(req, env = {}) {
       const g = cfg.games.find((x) => x.id === str(body.game, 60));
       const p = g && g.packs[Math.floor(Number(body.pack))];
       if (!g || !p) return json({ error: "Unknown item" }, 400);
+      if (event === "new" && typeof g.stock === "number" && sbConfigured()) {
+        const need = packUnits(p);
+        if (g.stock < need) return json({ ok: false, soldOut: true }, 409);
+        g.stock -= need;   // reserved for this order (given back if the order is marked "not received")
+        try { await sbSaveConfig(cfg); } catch (e) { /* ordering must not break */ }
+      }
       const khr = p.khr || Math.round((p.usd * cfg.settings.khrRate) / 100) * 100;
       let rbxLine = "";
       const rn = str(body.rbx, 30);
@@ -420,7 +435,16 @@ export async function handle(req, env = {}) {
 
       if (path === "/api/admin/products" && m === "PUT") {
         if (!sbConfigured()) return json({ error: "Supabase is not connected yet (SUPABASE_URL / SUPABASE_SERVICE_KEY missing in Vercel)." }, 503);
-        const next = clean(await req.json());
+        const inc = await req.json();
+        // stock is counted down by orders; keep the live number for any pack whose stock the admin did not change
+        try {
+          const cur = await load();
+          for (const g of (inc && inc.games) || []) {
+            const cg = cur.games.find((x) => x.id === g.id);
+            if (cg && (g.stock ?? null) === (g.stock0 ?? null)) g.stock = cg.stock ?? null;
+          }
+        } catch (e) { /* ignore */ }
+        const next = clean(inc);
         await sbSaveConfig(next);
         return json({ ok: true, updatedAt: next.updatedAt, config: next });
       }

@@ -187,6 +187,8 @@ input[type=color]{padding:2px;height:42px;width:64px}
         <label><input type="checkbox" id="e_soldOut"> Sold out</label>
         <label><input type="checkbox" id="e_hidden"> Hide from store</label>
       </div>
+      <label>Total in stock <small>(empty = unlimited)</small><input id="e_stock" inputmode="numeric" placeholder="unlimited" maxlength="9"></label>
+      <p class="hint" style="margin:-4px 0 0">Each purchase takes its pack's amount from this total (for example 80 Robux takes 80). When it runs out, the game shows as sold out.</p>
     </div>
 
     <div class="sec"><h3>Picture</h3>
@@ -280,8 +282,9 @@ function start(){
 /* ---------- data helpers ---------- */
 function normalize(c){
   c.games.forEach(function(g){
-    g.packs=g.packs.map(function(p){return {name:p.name,usd:String(p.usd),khr:p.khr?String(p.khr):""}});
+    g.packs=g.packs.map(function(p){return {name:p.name,usd:String(p.usd),khr:p.khr?String(p.khr):"",units:p.units?String(p.units):""}});
     g.fields=g.fields||[];
+    g.stock=(typeof g.stock==="number")?String(g.stock):"";g.stock0=g.stock;
   });
   c.settings.texts=c.settings.texts||{};
   c.settings.qrCodes=(Array.isArray(c.settings.qrCodes)?c.settings.qrCodes:[]).filter(function(q){return q.link}).map(function(q){return {usd:q.usd,link:q.link}});
@@ -290,7 +293,8 @@ function normalize(c){
 }
 function serialize(){
   return {version:1,settings:cfg.settings,games:cfg.games.map(function(g){
-    return Object.assign({},g,{packs:g.packs.map(function(p){return {name:p.name,usd:parseFloat(p.usd)||0,khr:parseInt(p.khr,10)||0}})});
+    var sn=function(v){v=String(v==null?"":v).trim();return v===""||isNaN(parseInt(v,10))?null:Math.max(0,parseInt(v,10))};
+    return Object.assign({},g,{stock:sn(g.stock),stock0:sn(g.stock0),packs:g.packs.map(function(p){return {name:p.name,usd:parseFloat(p.usd)||0,khr:parseInt(p.khr,10)||0,units:parseInt(p.units,10)||0}})});
   })};
 }
 function money(v){return "$"+(parseFloat(v)||0).toFixed(2)}
@@ -323,7 +327,7 @@ $("glist").addEventListener("click",function(e){
 });
 $("addGame").addEventListener("click",function(){
   openEditor(-1,true,{id:"",name:"",tag:"",sub:"",note:"",color:"#c93a76",icon:"",glyph:"",hidden:false,soldOut:false,
-    fields:[{key:"user",label:"Username"}],packs:[{name:"",usd:"",khr:""}]});
+    fields:[{key:"user",label:"Username"}],stock:"",stock0:"",packs:[{name:"",usd:"",khr:"",units:""}]});
 });
 
 /* ---------- settings ---------- */
@@ -473,7 +477,7 @@ function openEditor(idx,isNew,draft){
   editing={idx:idx,draft:d,isNew:isNew};
   $("eTitle").textContent=isNew?"Add game":"Edit game";
   $("e_name").value=d.name;$("e_tag").value=d.tag;$("e_sub").value=d.sub;$("e_note").value=d.note;
-  $("e_soldOut").checked=d.soldOut;$("e_hidden").checked=d.hidden;$("e_glyph").value=d.glyph;$("e_color").value=d.color;
+  $("e_stock").value=d.stock==null?"":d.stock;$("e_soldOut").checked=d.soldOut;$("e_hidden").checked=d.hidden;$("e_glyph").value=d.glyph;$("e_color").value=d.color;
   $("e_delete").hidden=isNew;$("bulkBox").hidden=true;
   renderPrev();renderFields();renderPacks();
   $("sheet").hidden=false;document.body.style.overflow="hidden";
@@ -483,7 +487,7 @@ function renderPrev(){var d=editing.draft;$("e_prev").innerHTML=iconHtml(d)}
 function readBasic(){
   var d=editing.draft;
   d.name=$("e_name").value.trim();d.tag=$("e_tag").value.trim();d.sub=$("e_sub").value.trim();d.note=$("e_note").value.trim();
-  d.soldOut=$("e_soldOut").checked;d.hidden=$("e_hidden").checked;d.glyph=$("e_glyph").value.trim();d.color=$("e_color").value;
+  d.stock=$("e_stock").value.replace(/[^\d]/g,"");d.soldOut=$("e_soldOut").checked;d.hidden=$("e_hidden").checked;d.glyph=$("e_glyph").value.trim();d.color=$("e_color").value;
 }
 function renderFields(){
   $("e_fields").innerHTML=editing.draft.fields.map(function(f,i){
@@ -498,6 +502,7 @@ function renderPacks(){
       '<label class="pname">Pack name<input data-pi="'+i+'" data-k="name" value="'+esc(p.name)+'" maxlength="60"></label>'+
       '<label>USD<input data-pi="'+i+'" data-k="usd" value="'+esc(p.usd)+'" inputmode="decimal"></label>'+
       '<label>Riel <small>(auto)</small><input data-pi="'+i+'" data-k="khr" value="'+esc(p.khr)+'" inputmode="numeric" placeholder="auto"></label>'+
+      '<label>Uses <small>(from stock)</small><input data-pi="'+i+'" data-k="units" value="'+esc(p.units||"")+'" inputmode="numeric" placeholder="auto"></label>'+
       '<button class="btn danger small pdel" data-pdel="'+i+'" type="button" aria-label="Remove pack">✕</button></div>';
   }).join("")||'<p class="hint">No packs yet.</p>';
 }
@@ -510,7 +515,7 @@ $("addField").addEventListener("click",function(){
 });
 $("e_packs").addEventListener("input",function(e){var i=e.target.dataset.pi;if(i!=null)editing.draft.packs[i][e.target.dataset.k]=e.target.value});
 $("e_packs").addEventListener("click",function(e){var b=e.target.closest("[data-pdel]");if(b){editing.draft.packs.splice(+b.dataset.pdel,1);renderPacks()}});
-$("addPack").addEventListener("click",function(){editing.draft.packs.push({name:"",usd:"",khr:""});renderPacks();
+$("addPack").addEventListener("click",function(){editing.draft.packs.push({name:"",usd:"",khr:"",units:""});renderPacks();
   var ins=$("e_packs").querySelectorAll('input[data-k="name"]');ins[ins.length-1].focus()});
 $("bulkBtn").addEventListener("click",function(){$("bulkBox").hidden=!$("bulkBox").hidden});
 $("bulkAdd").addEventListener("click",function(){
@@ -518,7 +523,7 @@ $("bulkAdd").addEventListener("click",function(){
   $("bulkText").value.split("\n").forEach(function(line){
     var parts=line.split(/[,\t]/).map(function(s){return s.trim()});
     if(parts[0]&&parts[1]&&!isNaN(parseFloat(parts[1]))){
-      editing.draft.packs.push({name:parts[0],usd:parts[1].replace("$",""),khr:(parts[2]||"").replace(/[^\d]/g,"")});n++;
+      editing.draft.packs.push({name:parts[0],usd:parts[1].replace("$",""),khr:(parts[2]||"").replace(/[^\d]/g,""),units:""});n++;
     }
   });
   if(n){$("bulkText").value="";$("bulkBox").hidden=true;renderPacks();toast(n+" packs added")}else toast("Use the format: name, price",true);
