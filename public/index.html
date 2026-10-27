@@ -584,7 +584,7 @@ $("payBtn").addEventListener("click",function(){
   $("payNote").textContent=T("payNote");$("payTitle").textContent=T("payTitle");q.hidden=true;RET=false;
   if(qp){remember(code);notify("new");
     try{localStorage.setItem("minnie-pending",JSON.stringify({code:code,game:cur.id,pack:cur.packs.indexOf(pack),vals:vals,rbx:rbxName(),ts:Date.now()}))}catch(e){}
-    openSheet(qp.link);return}   // this price's payment page opens as a pop-up over the store
+    location.href=qp.link;return}   // ABA blocks its page inside other sites, so it opens in this window (openSheet() is kept for a QR we make ourselves)
   q.hidden=true;notify("new");
   var who="";
   $("payNote").textContent=(who?T("payNoteWho",{name:who})+" ":"")+T("payNote");
