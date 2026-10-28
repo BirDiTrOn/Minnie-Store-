@@ -212,8 +212,15 @@ body[data-view="home"] .vtrack{display:none!important}
 .paybar{position:fixed;left:0;right:0;bottom:0;z-index:50;display:none;align-items:center;justify-content:space-between;gap:12px;padding:10px 16px calc(10px + env(safe-area-inset-bottom));background:var(--surface,#fff);border-top:1px solid var(--line,#eee);box-shadow:0 -6px 20px rgba(0,0,0,.12)}
 .paybar .pt{font-weight:700;font-size:15px}.paybar .pt b{color:var(--accent);font-size:20px;margin-left:4px;font-variant-numeric:tabular-nums}
 .paybar .btn{width:auto;white-space:nowrap;padding:12px 22px}
+.paybar .pt small{display:block;font-size:12px;font-weight:500;color:var(--muted,#777)}
+/* the order summary and its own pay button are gone: the bar at the bottom is the only pay button */
+.summary>h3,.summary>.row,.summary>#payBtn{display:none!important}
+.summary{padding:0!important;background:none!important;border:0!important}
+.order{grid-template-columns:1fr!important}
 .paybar.dim .btn{opacity:.55}
-@media(max-width:699px){.paybar.on{display:flex}body.hasbar{padding-bottom:84px}}
+.paybar.on{display:flex}
+@media(max-width:699px){body.hasbar{padding-bottom:84px}}
+@media(min-width:700px){.paybar{left:auto;right:24px;bottom:24px;width:min(400px,calc(100vw - 48px));border:1px solid var(--line,#eee);border-radius:18px}}
 .sfoot{padding:10px 14px 14px;display:grid;gap:8px;background:#fff}
 .sfoot a:not(.btn){text-align:center;font-size:13px;color:var(--muted,#777)}
 @media(min-width:700px){.sheet{align-items:center}.sbox{border-radius:22px;max-height:90vh}}
@@ -410,7 +417,7 @@ body[data-view="home"] .vtrack{display:none!important}
 </footer>
 
 <script id="default-config" type="application/json">{"version": 1, "settings": {"storeName": "Minnie Store", "telegram": "Lisaa_lisaz", "openHour": 7, "closeHour": 23, "khrRate": 4100, "qrCodes": [], "qrAccountName": "SIV NANN"}, "games": [{"id": "rbx-login", "name": "Robux (Login)", "tag": "ចូលគណនី", "sub": "យើងបញ្ចូលតាមរយៈគណនី Roblox របស់អ្នក។", "note": "ព័ត៌មានចូលគណនីត្រូវបានផ្ញើជាឯកជនតាម Telegram បន្ទាប់ពីបង់ប្រាក់ មិនមែនក្នុងទំព័រនេះទេ។", "color": "#e0332b", "icon": "/assets/robux.png", "glyph": "R$", "hidden": false, "soldOut": false, "fields": [{"key": "user", "label": "ឈ្មោះអ្នកប្រើ Roblox"}], "packs": [{"name": "80 Robux", "usd": 1.0, "khr": 4100}, {"name": "160 Robux", "usd": 1.9, "khr": 7800}, {"name": "240 Robux", "usd": 3.0, "khr": 12300}, {"name": "320 Robux", "usd": 3.8, "khr": 15500}, {"name": "500 Robux", "usd": 4.8, "khr": 19700}, {"name": "660 Robux", "usd": 6.6, "khr": 27000}, {"name": "740 Robux", "usd": 7.4, "khr": 30300}, {"name": "1,000 Robux", "usd": 9.4, "khr": 38500}, {"name": "1,500 Robux", "usd": 14.0, "khr": 57400}, {"name": "2,000 Robux", "usd": 18.0, "khr": 73800}, {"name": "2,500 Robux", "usd": 22.5, "khr": 92200}, {"name": "3,000 Robux", "usd": 27.0, "khr": 110700}, {"name": "5,000 Robux", "usd": 46.0, "khr": 188600}, {"name": "10,000 Robux", "usd": 90.0, "khr": 369000}]}, {"id": "rbx-send", "name": "Robux (Send)", "tag": "ផ្ញើ", "sub": "មិនចាំបាច់ប្រើពាក្យសម្ងាត់ទេ។ អ្នកទិញ game pass ដែលយើងរៀបចំឱ្យ។", "note": "យើងនឹងផ្ញើតំណ game pass ទៅអ្នកតាម Telegram បន្ទាប់ពីបង់ប្រាក់។", "color": "#c4580a", "icon": "/assets/robux.png", "glyph": "R$", "hidden": false, "soldOut": false, "fields": [{"key": "user", "label": "ឈ្មោះអ្នកប្រើ Roblox"}], "packs": [{"name": "100 Robux", "usd": 1.0}, {"name": "200 Robux", "usd": 2.0}, {"name": "500 Robux", "usd": 5.0}]}]}</script>
-<div class="paybar" id="paybar" aria-live="polite"><div class="pt"><span data-t="rowTotal">សរុប</span>:<b id="barTotal">$0.00</b></div><button class="btn" id="barPay" type="button" data-t="barPay">បង់ប្រាក់ឥឡូវនេះ</button></div>
+<div class="paybar" id="paybar" aria-live="polite"><div class="pt"><span data-t="rowTotal">សរុប</span>:<b id="barTotal">$0.00</b><small id="barKhr"></small></div><button class="btn" id="barPay" type="button" data-t="barPay">បង់ប្រាក់ឥឡូវនេះ</button></div>
 <script>
 if(window.top!==window.self){try{if(/[?&]paid=1\b/.test(location.search)){parent.postMessage({minnie:"paid"},location.origin);document.documentElement.innerHTML="<body style='font:16px sans-serif;text-align:center;padding:40px'>✓</body>";throw 0}}catch(e){if(e===0)throw e}}
 
@@ -567,7 +574,7 @@ function refresh(){
   $("sTotal").textContent=pack?money(pack.usd):"$0.00";
   $("sKhr").textContent=pack?khr(pack):"-";
   $("payBtn").disabled=!ready();
-  $("barTotal").textContent=pack?money(pack.usd):"$0.00";$("paybar").classList.toggle("dim",!ready());syncBar();
+  $("barTotal").textContent=pack?money(pack.usd):"$0.00";$("barKhr").textContent=pack?khr(pack):"";$("paybar").classList.toggle("dim",!ready());syncBar();
 }
 // phone: the total and the pay button stay at the bottom of the screen
 function syncBar(){
