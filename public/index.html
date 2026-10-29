@@ -184,7 +184,8 @@ body[data-view="home"] .vtrack{display:none!important}
 .trackform{display:flex;gap:8px;max-width:420px}
 .trackform .btn{width:auto;padding-inline:20px}
 .trackform input{text-transform:uppercase}
-.tlist{display:grid;gap:10px;margin-top:12px;grid-template-columns:repeat(auto-fill,minmax(260px,1fr))}
+.tlist{display:block;margin-top:12px}
+.tgrid{display:grid;gap:10px}
 .tcard.click{cursor:pointer}
 .ttabs{display:flex;gap:4px;overflow-x:auto;border-bottom:1px solid var(--line);margin:0 0 12px;scrollbar-width:none}
 .ttabs::-webkit-scrollbar{display:none}
@@ -205,6 +206,22 @@ body[data-view="home"] .vtrack{display:none!important}
 .tstat{font-size:12px;font-weight:700;padding:3px 10px;border-radius:99px;background:#fff0dc;color:#b4540a;text-align:right}
 .s-paid .tstat{background:#dcf5ea;color:#12805c}.s-delivered .tstat{background:#12805c;color:#fff}.s-rejected .tstat{background:#fde1e1;color:#b3261e}
 .tsub{font-size:13px;color:var(--muted)}
+.thdr,.tprice{display:none}
+@media(min-width:700px){
+  .tgrid{gap:16px}
+  .tcard{padding:0;gap:0;overflow:hidden;border-radius:14px;grid-template-columns:1fr auto auto;align-items:center}
+  .ttop{display:contents}
+  .ttop b{grid-column:1;background:var(--soft,#f6e3ec);padding:0 18px;min-height:50px;display:flex;align-items:center;font-size:15px}
+  .thdr{grid-column:2/4;background:var(--soft,#f6e3ec);padding:0 18px;min-height:50px;display:flex!important;align-items:center;justify-content:flex-end;font-size:13px;color:var(--muted)}
+  .tname{grid-column:1;padding:20px 18px 6px;font-size:16px;color:var(--ink);font-weight:700}
+  .tname .tpm{display:none}
+  .tprice{display:block;grid-column:2;padding:20px 24px 6px;font-weight:800;font-size:18px}
+  .ttop .tstat{grid-column:3;grid-row:2;justify-self:end;margin:14px 18px 0 0;font-size:13px;padding:4px 14px}
+  .tdots{grid-column:1/-1;padding:10px 18px 4px}
+  .tcard>.tsub:not(.tname){grid-column:1;padding:6px 18px 14px}
+  .tcard>.btn{grid-column:2/4;margin:0 18px 14px;justify-self:end;padding:10px 20px}
+  .tmore{grid-column:3;padding:0 18px 14px;align-self:end}
+}
 .tdots{display:flex;gap:6px}
 .tdots i{flex:1;height:6px;border-radius:99px;background:var(--line)}
 .tdots i.on{background:var(--accent)}
@@ -721,7 +738,9 @@ function when(iso){try{return new Date(iso).toLocaleString("en-GB",{timeZone:"As
 function trCard(o){
   var c=el("div","tcard s-"+o.status);
   var top=el("div","ttop");top.appendChild(el("b",null,o.code));top.appendChild(el("span","tstat",T(SKEY[o.status]||"statusPending")));c.appendChild(top);
-  c.appendChild(el("div","tsub",o.game+" · "+o.pack+" · "+money(o.usd)));
+  top.insertBefore(el("span","thdr",T("trackCreated")+" "+when(o.created)),top.lastChild);
+  var nm=el("div","tsub tname",o.game+" · "+o.pack);nm.appendChild(el("span","tpm"," · "+money(o.usd)));c.appendChild(nm);
+  c.appendChild(el("div","tprice",money(o.usd)));
   var dots=el("div","tdots"),at=STEPS.indexOf(o.status);
   STEPS.forEach(function(s,i){dots.appendChild(el("i",o.status==="rejected"?(i===0?"on":""):(i<=at?"on":"")))});c.appendChild(dots);
   c.appendChild(el("div","tsub",T("trackUpdated",{time:when(o.updated)})));
@@ -791,10 +810,10 @@ function trRender(){
     var n=list.filter(t[2]).length,bt=el("button",t[0]===TRTAB?"on":"",t[1]);bt.type="button";bt.setAttribute("role","tab");bt.setAttribute("aria-selected",t[0]===TRTAB?"true":"false");
     bt.appendChild(el("small",null,String(n)));bt.addEventListener("click",function(){TRTAB=t[0];trRender()});bar.appendChild(bt);
   });
-  box.appendChild(bar);
+  box.appendChild(bar);var grid=el("div","tgrid");box.appendChild(grid);
   var cur=TABS.filter(function(t){return t[0]===TRTAB})[0],show=list.filter(cur[2]);
-  if(!show.length)box.appendChild(el("p","note",T("trackEmpty")));
-  show.forEach(function(o){box.appendChild(trCard(o))});
+  if(!show.length)grid.appendChild(el("p","note",T("trackEmpty")));
+  show.forEach(function(o){grid.appendChild(trCard(o))});
 }
 function trFetch(code,quiet){
   return fetch("/api/track?code="+encodeURIComponent(code),{cache:"no-store"}).then(function(r){if(!r.ok)throw 0;return r.json()})
