@@ -439,6 +439,22 @@ export async function handle(req, env = {}) {
       return o ? json(publicOrder(o)) : json({ error: "Not found" }, 404);
     }
 
+    // Tracking page: a customer who forgot to press "I have paid" presses it there
+    if (path === "/api/order-paid" && m === "POST") {
+      const ip = (req.headers.get("x-forwarded-for") || "").split(",")[0].trim() || "x";
+      if (throttled("op:" + ip, 20, 60000)) return json({ error: "Too many requests" }, 429);
+      const code = str((await req.json().catch(() => ({}))).code, 12).toUpperCase();
+      if (!/^NS-[A-Z0-9]{5}$/.test(code) || !sbConfigured()) return json({ error: "Not found" }, 404);
+      let o = null; try { o = await sbOrderGet(code); } catch (e) { /* ignore */ }
+      if (!o) return json({ error: "Not found" }, 404);
+      if (o.status === "pending") {
+        await setOrderStatus(code, "verifying");
+        const body = "Order: " + code + "\nGame: " + o.game + "\nPack: " + o.pack + "\nTotal: $" + Number(o.usd).toFixed(2);
+        await tgUpsertOrder(code, "verifying", { body });   // uses the order's original message when it has one
+        o.status = "verifying";
+      }
+      return json({ ok: true, status: o.status });
+    }
     // ABA PayWay: a KHQR with the exact price for one order
     if (path === "/api/pay" && m === "POST") {
       if (!pwReady()) return json({ error: "ABA PayWay is not set up" }, 503);
