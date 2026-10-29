@@ -185,8 +185,14 @@ body[data-view="home"] .vtrack{display:none!important}
 .trackform .btn{width:auto;padding-inline:20px}
 .trackform input{text-transform:uppercase}
 .tlist{display:grid;gap:10px;margin-top:12px;grid-template-columns:repeat(auto-fill,minmax(260px,1fr))}
-.tcontact{margin:4px 0 18px;display:grid;gap:8px}
-.tcontact p{margin:0}
+.tcard.go{cursor:pointer}
+.tmore{font-size:13px;color:var(--accent);font-weight:700;justify-self:end}
+.tdet{display:grid;gap:10px;text-align:left;width:100%}
+.tdet h3{font-size:20px;margin:0;padding-right:34px}
+.tdet dl{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;margin:0}
+.tdet dt{color:var(--muted,#777);font-size:14px}.tdet dd{margin:0;text-align:right;font-weight:600}
+.thist{list-style:none;margin:0;padding:0;display:grid;gap:8px;border-top:1px dashed var(--line);padding-top:10px}
+.thist li{display:flex;justify-content:space-between;gap:10px;font-size:14px}.thist li span:last-child{color:var(--muted,#777)}
 .tcard{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px;display:grid;gap:6px}
 .ttop{display:flex;justify-content:space-between;gap:8px;align-items:center}
 .ttop b{font-family:var(--f-mono);letter-spacing:.04em}
@@ -402,8 +408,8 @@ body[data-view="home"] .vtrack{display:none!important}
       <p class="note" style="margin:0 0 12px" data-t="trackHint">បញ្ចូលលេខកូដបញ្ជាទិញរបស់អ្នក (ឧទាហរណ៍ NS-AB123) ដើម្បីមើលស្ថានភាព។</p>
       <form class="trackform" id="trackForm"><input id="trackCode" maxlength="12" autocapitalize="characters" autocomplete="off" aria-label="Order code"><button class="btn" type="submit" data-t="trackButton">ពិនិត្យ</button></form>
       <div class="msg" id="trackMsg" style="color:var(--warn)"></div>
-      <div class="tcontact"><p class="note" data-t="trackContactHint"></p><a class="btn ghost" id="trackContact" href="#" target="_blank" rel="noopener" style="text-decoration:none;text-align:center" data-t="trackContactBtn"></a></div>
       <div id="trackList" class="tlist"></div>
+      <div class="modal" id="tdetail" hidden role="dialog" aria-modal="true"><div class="mbox" id="tdBody"></div></div>
     </div>
   </section>
 
@@ -435,7 +441,7 @@ if(window.top!==window.self){try{if(/[?&]paid=1\b/.test(location.search)){parent
    so the store always opens. */
 var DEFAULT_CFG = JSON.parse(document.getElementById("default-config").textContent);
 var CFG = null;
-var TD = {"statusOpen": "កំពុងបើក", "statusClosed": "បិទ · បើកម៉ោង {time}", "heroTitle": "បញ្ចូលហ្គេមរបស់អ្នក ក្នុងប៉ុន្មាននាទី", "heroText": "ជ្រើសរើសហ្គេម ជ្រើសរើសកញ្ចប់ រួចបង់ប្រាក់តាម KHQR ពីកម្មវិធីធនាគារកម្ពុជាណាមួយ។ តម្លៃបង្ហាញជាដុល្លារអាមេរិកមុនពេលអ្នកបង់។", "gamesTitle": "ហ្គេមទាំងអស់", "countText": "{n} ផលិតផល", "loadingText": "កំពុងផ្ទុកហ្គេម…", "emptyText": "មិនទាន់មានហ្គេមទេ។ សូមត្រឡប់មកវិញនៅពេលក្រោយ។", "fromLabel": "ចាប់ពី", "cardButton": "បញ្ចូលប្រាក់", "soldOutLabel": "អស់ស្តុក", "step1Title": "1. ជ្រើសរើសកញ្ចប់", "step2Title": "2. ព័ត៌មានរបស់អ្នក", "summaryTitle": "សង្ខេបការបញ្ជាទិញ", "rowGame": "ហ្គេម", "rowPack": "កញ្ចប់", "rowAccount": "គណនី", "rowTotal": "សរុប", "rowRiel": "ជាប្រាក់រៀល", "payButton": "បង់ប្រាក់តាម KHQR", "payTitle": "ស្កេនដើម្បីបង់ប្រាក់", "sheetTitle": "បង់ប្រាក់តាម KHQR", "abaOpen": "បើកកម្មវិធី ABA ដើម្បីបង់ប្រាក់", "qrLoading": "កំពុងបង្កើត QR…", "qrFail": "មិនអាចបង្កើត QR បានទេ។ សូមព្យាយាមម្តងទៀត ឬទាក់ទងយើង។", "barPay": "បង់ប្រាក់ឥឡូវនេះ", "payReturnTitle": "ការបង់ប្រាក់ជោគជ័យ! 🎉", "payReturnMsg": "យើងបានទទួលដំណឹងហើយ! យើងនឹងផ្ទៀងផ្ទាត់ និងបញ្ចូលភ្លាមៗ។ សូមផ្ញើរូបថតវិក្កយបត្រទៅ Telegram ខាងក្រោម។", "payExactly": "សូមបង់ចំនួន", "orderCodeLabel": "លេខកូដបញ្ជាទិញ", "payNoteWho": "ឈ្មោះគណនីលើ QR៖ {name}។", "payNote": "បន្ទាប់ពីបង់ប្រាក់ សូមផ្ញើរូបថតអេក្រង់នៃការបង់ប្រាក់ និងលេខកូដបញ្ជាទិញទៅ Telegram។ យើងនឹងបញ្ចូលភ្លាមៗ នៅពេលបញ្ជាក់ការបង់ប្រាក់រួច។", "paidButton": "ខ្ញុំបានបង់ប្រាក់ហើយ", "paidSentMsg": "បានជូនដំណឹងទៅហាងហើយ! កំពុងបើក Telegram សូមភ្ជាប់រូបថតវិក្កយបត្រ ហើយផ្ញើ។", "telegramButton": "ផ្ញើរូបថតអេក្រង់ទៅ Telegram", "copyButton": "ចម្លងព័ត៌មានបញ្ជាទិញ", "copiedMsg": "បានចម្លងហើយ។ សូមបិទភ្ជាប់ក្នុង Telegram រួមជាមួយរូបថតអេក្រង់នៃការបង់ប្រាក់។", "copyFailMsg": "ចម្លងមិនបានទេ។ សូមជ្រើសរើសព័ត៌មាន ហើយចម្លងដោយដៃ។", "msgOrder": "{store} លេខបញ្ជាទិញ {code}", "msgGame": "ហ្គេម", "msgPack": "កញ្ចប់", "msgAccount": "គណនី", "msgTotal": "សរុប", "receiptAsk": "📎 សូមភ្ជាប់រូបថតអេក្រង់នៃការបង់ប្រាក់ (វិក្កយបត្រ) នៅខាងក្រោម។", "feat1Title": "រហ័ស", "feat1Text": "ការបញ្ជាទិញត្រូវបានដំណើរការភ្លាមៗ បន្ទាប់ពីបញ្ជាក់ការបង់ប្រាក់ ក្នុងម៉ោងបើកទ្វារ។", "feat2Title": "តម្លៃច្បាស់លាស់", "feat2Text": "អ្នកឃើញតម្លៃសរុបជាដុល្លារមុនពេលបង់ ហើយគ្មានថ្លៃលាក់កំបាំងទេ។", "feat3Title": "បង់ប្រាក់តាម KHQR", "feat3Text": "ស្កេនជាមួយ ABA, ACLEDA, Wing ឬកម្មវិធីធនាគារណាដែលគាំទ្រ KHQR។", "footerText": "© 2026 {store} · Telegram {telegram}", "footerAccept": "យើងទទួលការទូទាត់តាម", "trackTitle": "តាមដានការបញ្ជាទិញ", "trackHint": "បញ្ចូលលេខកូដបញ្ជាទិញរបស់អ្នក (ឧទាហរណ៍ NS-AB123) ដើម្បីមើលស្ថានភាព។", "trackPlaceholder": "NS-XXXXX", "trackButton": "ពិនិត្យ", "trackNotFound": "រកមិនឃើញការបញ្ជាទិញនេះទេ។ សូមពិនិត្យលេខកូដម្តងទៀត។", "trackEmpty": "មិនទាន់មានការបញ្ជាទិញនៅលើឧបករណ៍នេះទេ។", "trackLink": "តាមដានការបញ្ជាទិញ", "trackUpdated": "ធ្វើបច្ចុប្បន្នភាព {time}", "statusPending": "រង់ចាំការបង់ប្រាក់", "statusVerifying": "កំពុងពិនិត្យការបង់ប្រាក់", "statusPaid": "បានទទួលការបង់ប្រាក់ · កំពុងបញ្ចូល", "statusDelivered": "បានបញ្ចូលរួចរាល់", "statusRejected": "មិនទាន់ទទួលបានការបង់ប្រាក់", "robloxCheck": "ពិនិត្យឈ្មោះ", "robloxChecking": "កំពុងពិនិត្យ...", "robloxNotFound": "រកមិនឃើញឈ្មោះ Roblox នេះទេ។ សូមពិនិត្យអក្ខរាវិរុទ្ធឡើងវិញ។", "robloxUnavailable": "មិនអាចពិនិត្យជាមួយ Roblox ឥឡូវនេះបានទេ។ អ្នកអាចបន្តបាន សូមពិនិត្យឈ្មោះឱ្យច្បាស់។", "robloxMustCheck": "សូមចុច \"ពិនិត្យឈ្មោះ\" ដើម្បីបញ្ជាក់គណនី មុនពេលបន្ត។", "robloxFriends": "មិត្តភក្តិ", "robloxFollowers": "អ្នកតាមដាន", "robloxFollowing": "កំពុងតាមដាន", "acctTitle": "គណនី Roblox របស់អ្នក", "acctHint": "បញ្ចូលឈ្មោះអ្នកប្រើ Roblox ហើយចុចពិនិត្យ រួចជ្រើសរើសហ្គេមខាងក្រោម។", "acctPlaceholder": "បញ្ចូលឈ្មោះ Roblox របស់អ្នក", "trackContactHint": "ភ្លេចចុច «ខ្ញុំបានបង់ប្រាក់ហើយ»? សូមទាក់ទងអ្នកគ្រប់គ្រង ហើយផ្ញើរូបថតវិក្កយបត្រ។", "trackContactBtn": "ទាក់ទងអ្នកគ្រប់គ្រង", "trackContactMsg": "សួស្តី ខ្ញុំបានបង់ប្រាក់ហើយ ប៉ុន្តែភ្លេចចុចប៊ូតុង។ លេខកូដបញ្ជាទិញ៖ {code}", "acctLabel": "ឈ្មោះអ្នកប្រើ Roblox", "orderNeedsAcct": "សូមពិនិត្យឈ្មោះ Roblox របស់អ្នកនៅផ្នែកខាងលើជាមុន។", "navHome": "ទំព័រដើម", "navTrack": "តាមដានការបញ្ជាទិញ"};   // built-in (Khmer) wording; your edits from /admin override it
+var TD = {"statusOpen": "កំពុងបើក", "statusClosed": "បិទ · បើកម៉ោង {time}", "heroTitle": "បញ្ចូលហ្គេមរបស់អ្នក ក្នុងប៉ុន្មាននាទី", "heroText": "ជ្រើសរើសហ្គេម ជ្រើសរើសកញ្ចប់ រួចបង់ប្រាក់តាម KHQR ពីកម្មវិធីធនាគារកម្ពុជាណាមួយ។ តម្លៃបង្ហាញជាដុល្លារអាមេរិកមុនពេលអ្នកបង់។", "gamesTitle": "ហ្គេមទាំងអស់", "countText": "{n} ផលិតផល", "loadingText": "កំពុងផ្ទុកហ្គេម…", "emptyText": "មិនទាន់មានហ្គេមទេ។ សូមត្រឡប់មកវិញនៅពេលក្រោយ។", "fromLabel": "ចាប់ពី", "cardButton": "បញ្ចូលប្រាក់", "soldOutLabel": "អស់ស្តុក", "step1Title": "1. ជ្រើសរើសកញ្ចប់", "step2Title": "2. ព័ត៌មានរបស់អ្នក", "summaryTitle": "សង្ខេបការបញ្ជាទិញ", "rowGame": "ហ្គេម", "rowPack": "កញ្ចប់", "rowAccount": "គណនី", "rowTotal": "សរុប", "rowRiel": "ជាប្រាក់រៀល", "payButton": "បង់ប្រាក់តាម KHQR", "payTitle": "ស្កេនដើម្បីបង់ប្រាក់", "sheetTitle": "បង់ប្រាក់តាម KHQR", "abaOpen": "បើកកម្មវិធី ABA ដើម្បីបង់ប្រាក់", "qrLoading": "កំពុងបង្កើត QR…", "qrFail": "មិនអាចបង្កើត QR បានទេ។ សូមព្យាយាមម្តងទៀត ឬទាក់ទងយើង។", "barPay": "បង់ប្រាក់ឥឡូវនេះ", "payReturnTitle": "ការបង់ប្រាក់ជោគជ័យ! 🎉", "payReturnMsg": "យើងបានទទួលដំណឹងហើយ! យើងនឹងផ្ទៀងផ្ទាត់ និងបញ្ចូលភ្លាមៗ។ សូមផ្ញើរូបថតវិក្កយបត្រទៅ Telegram ខាងក្រោម។", "payExactly": "សូមបង់ចំនួន", "orderCodeLabel": "លេខកូដបញ្ជាទិញ", "payNoteWho": "ឈ្មោះគណនីលើ QR៖ {name}។", "payNote": "បន្ទាប់ពីបង់ប្រាក់ សូមផ្ញើរូបថតអេក្រង់នៃការបង់ប្រាក់ និងលេខកូដបញ្ជាទិញទៅ Telegram។ យើងនឹងបញ្ចូលភ្លាមៗ នៅពេលបញ្ជាក់ការបង់ប្រាក់រួច។", "paidButton": "ខ្ញុំបានបង់ប្រាក់ហើយ", "paidSentMsg": "បានជូនដំណឹងទៅហាងហើយ! កំពុងបើក Telegram សូមភ្ជាប់រូបថតវិក្កយបត្រ ហើយផ្ញើ។", "telegramButton": "ផ្ញើរូបថតអេក្រង់ទៅ Telegram", "copyButton": "ចម្លងព័ត៌មានបញ្ជាទិញ", "copiedMsg": "បានចម្លងហើយ។ សូមបិទភ្ជាប់ក្នុង Telegram រួមជាមួយរូបថតអេក្រង់នៃការបង់ប្រាក់។", "copyFailMsg": "ចម្លងមិនបានទេ។ សូមជ្រើសរើសព័ត៌មាន ហើយចម្លងដោយដៃ។", "msgOrder": "{store} លេខបញ្ជាទិញ {code}", "msgGame": "ហ្គេម", "msgPack": "កញ្ចប់", "msgAccount": "គណនី", "msgTotal": "សរុប", "receiptAsk": "📎 សូមភ្ជាប់រូបថតអេក្រង់នៃការបង់ប្រាក់ (វិក្កយបត្រ) នៅខាងក្រោម។", "feat1Title": "រហ័ស", "feat1Text": "ការបញ្ជាទិញត្រូវបានដំណើរការភ្លាមៗ បន្ទាប់ពីបញ្ជាក់ការបង់ប្រាក់ ក្នុងម៉ោងបើកទ្វារ។", "feat2Title": "តម្លៃច្បាស់លាស់", "feat2Text": "អ្នកឃើញតម្លៃសរុបជាដុល្លារមុនពេលបង់ ហើយគ្មានថ្លៃលាក់កំបាំងទេ។", "feat3Title": "បង់ប្រាក់តាម KHQR", "feat3Text": "ស្កេនជាមួយ ABA, ACLEDA, Wing ឬកម្មវិធីធនាគារណាដែលគាំទ្រ KHQR។", "footerText": "© 2026 {store} · Telegram {telegram}", "footerAccept": "យើងទទួលការទូទាត់តាម", "trackTitle": "តាមដានការបញ្ជាទិញ", "trackHint": "បញ្ចូលលេខកូដបញ្ជាទិញរបស់អ្នក (ឧទាហរណ៍ NS-AB123) ដើម្បីមើលស្ថានភាព។", "trackPlaceholder": "NS-XXXXX", "trackButton": "ពិនិត្យ", "trackNotFound": "រកមិនឃើញការបញ្ជាទិញនេះទេ។ សូមពិនិត្យលេខកូដម្តងទៀត។", "trackEmpty": "មិនទាន់មានការបញ្ជាទិញនៅលើឧបករណ៍នេះទេ។", "trackLink": "តាមដានការបញ្ជាទិញ", "trackUpdated": "ធ្វើបច្ចុប្បន្នភាព {time}", "statusPending": "រង់ចាំការបង់ប្រាក់", "statusVerifying": "កំពុងពិនិត្យការបង់ប្រាក់", "statusPaid": "បានទទួលការបង់ប្រាក់ · កំពុងបញ្ចូល", "statusDelivered": "បានបញ្ចូលរួចរាល់", "statusRejected": "មិនទាន់ទទួលបានការបង់ប្រាក់", "robloxCheck": "ពិនិត្យឈ្មោះ", "robloxChecking": "កំពុងពិនិត្យ...", "robloxNotFound": "រកមិនឃើញឈ្មោះ Roblox នេះទេ។ សូមពិនិត្យអក្ខរាវិរុទ្ធឡើងវិញ។", "robloxUnavailable": "មិនអាចពិនិត្យជាមួយ Roblox ឥឡូវនេះបានទេ។ អ្នកអាចបន្តបាន សូមពិនិត្យឈ្មោះឱ្យច្បាស់។", "robloxMustCheck": "សូមចុច \"ពិនិត្យឈ្មោះ\" ដើម្បីបញ្ជាក់គណនី មុនពេលបន្ត។", "robloxFriends": "មិត្តភក្តិ", "robloxFollowers": "អ្នកតាមដាន", "robloxFollowing": "កំពុងតាមដាន", "acctTitle": "គណនី Roblox របស់អ្នក", "acctHint": "បញ្ចូលឈ្មោះអ្នកប្រើ Roblox ហើយចុចពិនិត្យ រួចជ្រើសរើសហ្គេមខាងក្រោម។", "acctPlaceholder": "បញ្ចូលឈ្មោះ Roblox របស់អ្នក", "trackContactHint": "ភ្លេចចុច «ខ្ញុំបានបង់ប្រាក់ហើយ»? សូមទាក់ទងអ្នកគ្រប់គ្រង ហើយផ្ញើរូបថតវិក្កយបត្រ។", "trackContactBtn": "ទាក់ទងអ្នកគ្រប់គ្រង", "trackContactMsg": "សួស្តី ខ្ញុំបានបង់ប្រាក់ហើយ ប៉ុន្តែភ្លេចចុចប៊ូតុង។ លេខកូដបញ្ជាទិញ៖ {code}", "trackDetails": "មើលលម្អិត ›", "trackCreated": "បានបញ្ជាទិញ", "trackHistory": "ប្រវត្តិស្ថានភាព", "trackClose": "បិទ", "acctLabel": "ឈ្មោះអ្នកប្រើ Roblox", "orderNeedsAcct": "សូមពិនិត្យឈ្មោះ Roblox របស់អ្នកនៅផ្នែកខាងលើជាមុន។", "navHome": "ទំព័រដើម", "navTrack": "តាមដានការបញ្ជាទិញ"};   // built-in (Khmer) wording; your edits from /admin override it
 /* T("key", {name:value}) = your edited text, or the built-in one; {name} placeholders are filled in */
 function T(k,v){var o=(CFG&&CFG.settings&&CFG.settings.texts)||{};var s=o[k]||TD[k]||"";if(v)for(var n in v)s=s.split("{"+n+"}").join(v[n]);return s}
 
@@ -715,23 +721,59 @@ function trCard(o){
   c.appendChild(el("div","tsub",T("trackUpdated",{time:when(o.updated)})));
   if(o.status==="pending"){   // forgot to press "I have paid"? do it here
     var pb=el("button","btn",T("paidButton"));pb.type="button";
-    pb.addEventListener("click",function(){
-      pb.disabled=true;
-      var msg=T("msgOrder",{store:CFG.settings.storeName,code:o.code})+"\n"+T("msgGame")+": "+o.game+"\n"+T("msgPack")+": "+o.pack+"\n"+T("msgTotal")+": "+money(o.usd)+"\n\n"+T("receiptAsk");
-      var tg="https://t.me/"+CFG.settings.telegram+"?text="+encodeURIComponent(msg),w=null;
-      try{w=window.open(tg,"_blank")}catch(e){}
-      fetch("/api/order-paid",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({code:o.code})})
-        .then(function(r){return r.json()}).then(function(r){if(r&&r.ok){o.status=r.status;TR[o.code]=o;trRender()}else pb.disabled=false}).catch(function(){pb.disabled=false})
-        .then(function(){if(!w)location.href=tg});
-    });
+    pb.addEventListener("click",function(){payNow(o,pb)});
     c.appendChild(pb);
-    var ca=el("a","tsub",T("trackContactBtn"));ca.href=adminUrl(o.code);ca.target="_blank";ca.rel="noopener";ca.style.textDecoration="underline";c.appendChild(ca);
   }
+  c.appendChild(el("div","tmore",T("trackDetails")));
+  c.classList.add("go");c.tabIndex=0;
+  function openIt(e){if(e.target.closest("button"))return;tdOpen(o.code)}
+  c.addEventListener("click",openIt);c.addEventListener("keydown",function(e){if(e.key==="Enter")openIt(e)});
   return c;
 }
+var TDOPEN=null;
+function payNow(o,btn){
+  btn.disabled=true;
+  var msg=T("msgOrder",{store:CFG.settings.storeName,code:o.code})+"\n"+T("msgGame")+": "+o.game+"\n"+T("msgPack")+": "+o.pack+"\n"+T("msgTotal")+": "+money(o.usd)+"\n\n"+T("receiptAsk");
+  var tg="https://t.me/"+CFG.settings.telegram+"?text="+encodeURIComponent(msg),w=null;
+  try{w=window.open(tg,"_blank")}catch(e){}
+  fetch("/api/order-paid",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({code:o.code})})
+    .then(function(r){return r.json()}).then(function(r){if(r&&r.ok){o.status=r.status;TR[o.code]=o;trRender()}else btn.disabled=false}).catch(function(){btn.disabled=false})
+    .then(function(){if(!w)location.href=tg});
+}
+function tdOpen(code){TDOPEN=code;tdDraw();$("tdetail").hidden=false;document.body.style.overflow="hidden"}
+function tdClose(){TDOPEN=null;$("tdetail").hidden=true;document.body.style.overflow=""}
+function tdDraw(){
+  var o=TR[TDOPEN],b=$("tdBody");if(!o){tdClose();return}
+  b.textContent="";
+  var x=el("button","mclose","×");x.type="button";x.setAttribute("aria-label",T("trackClose"));x.addEventListener("click",tdClose);b.appendChild(x);
+  var d=el("div","tdet");
+  var h=el("h3",null,o.code);d.appendChild(h);
+  var top=el("div","ttop");top.appendChild(el("span","tstat",T(SKEY[o.status]||"statusPending")));d.appendChild(top);
+  var dots=el("div","tdots"),at=STEPS.indexOf(o.status);
+  STEPS.forEach(function(s,i){dots.appendChild(el("i",o.status==="rejected"?(i===0?"on":""):(i<=at?"on":"")))});d.appendChild(dots);
+  var dl=el("dl");
+  function row(k,v){dl.appendChild(el("dt",null,k));dl.appendChild(el("dd",null,v))}
+  row(T("msgGame"),o.game);row(T("msgPack"),o.pack);
+  var rate=(CFG.settings&&CFG.settings.khrRate)||4100;row(T("msgTotal"),money(o.usd)+" ("+(Math.round(o.usd*rate/100)*100).toLocaleString("en-US")+" ៛)");
+  row(T("trackCreated"),when(o.created));
+  d.appendChild(dl);
+  if(o.history&&o.history.length){
+    d.appendChild(el("b",null,T("trackHistory")));
+    var ul=el("ul","thist");
+    o.history.forEach(function(hh){var li=el("li");li.appendChild(el("span",null,T(SKEY[hh.s]||"statusPending")));li.appendChild(el("span",null,when(hh.t)));ul.appendChild(li)});
+    d.appendChild(ul);
+  }
+  if(o.status==="pending"){var pb=el("button","btn",T("paidButton"));pb.type="button";pb.addEventListener("click",function(){payNow(o,pb)});d.appendChild(pb)}
+  d.appendChild(el("p","note",T("trackContactHint")));
+  var ca=el("a","btn ghost",T("trackContactBtn"));ca.href=adminUrl(o.code);ca.target="_blank";ca.rel="noopener";ca.style.cssText="text-decoration:none;text-align:center";d.appendChild(ca);
+  var cl=el("button","btn ghost",T("trackClose"));cl.type="button";cl.addEventListener("click",tdClose);d.appendChild(cl);
+  b.appendChild(d);
+}
+$("tdetail").addEventListener("click",function(e){if(e.target===$("tdetail"))tdClose()});
+document.addEventListener("keydown",function(e){if(e.key==="Escape"&&TDOPEN)tdClose()});
 function adminUrl(code){return "https://t.me/"+CFG.settings.telegram+"?text="+encodeURIComponent(T("trackContactMsg",{code:code||""}).replace(/[ :：៖]*$/,""))}
 function trRender(){
-  $("trackContact").href=adminUrl("");
+  if(TDOPEN)tdDraw();
   var box=$("trackList");box.textContent="";var list=Object.keys(TR).map(function(k){return TR[k]}).sort(function(a,b){return String(b.created).localeCompare(String(a.created))});
   if(!list.length){box.appendChild(el("p","note",T("trackEmpty")));return}
   list.forEach(function(o){box.appendChild(trCard(o))});
