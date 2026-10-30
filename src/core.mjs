@@ -295,7 +295,7 @@ async function pwSync(code) {
   if (!(await pwIsPaid(code, o.usd))) return false;
   await setOrderStatus(code, "paid");
   const when = new Date().toLocaleString("en-GB", { timeZone: "Asia/Phnom_Penh", hour12: false, day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
-  await tgUpsertOrder(code, "paid", { by: { who: "ABA PayWay (automatic)", when } });
+  await tgUpsertOrder(code, "paid", { body: "Order: " + code + "\nGame: " + o.game + "\nPack: " + o.pack + "\nTotal: $" + Number(o.usd).toFixed(2), by: { who: "ABA PayWay (automatic)", when } });
   return true;
 }
 const tgSecret = async (env) => b64url(await hmac(await secret(env), "tg-webhook")).slice(0, 40);
@@ -402,7 +402,9 @@ export async function handle(req, env = {}) {
       await setOrderStatus(code, event === "paid" ? "verifying" : "pending", { game: g.name, pack: p.name, usd: p.usd });
       if (event === "paid" && sbConfigured()) { try { const cur = await sbOrderGet(code); if (cur && (cur.status === "paid" || cur.status === "delivered")) return json({ ok: true, sent: false }); } catch (e) { /* ignore */ } }
       // "new" sends the order's one message; "paid" edits that same message (a new one only if the first is missing)
-      const r = await tgUpsertOrder(code, event === "paid" ? "verifying" : "pending", { body: msgBody });
+      // Telegram is only told when the customer says they paid ("new" just records the order and reserves stock)
+      if (event !== "paid") return json({ ok: true, sent: false });
+      const r = await tgUpsertOrder(code, "verifying", { body: msgBody });
       return json({ ok: true, sent: r.sent });
     }
 
