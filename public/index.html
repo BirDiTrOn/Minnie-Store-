@@ -194,7 +194,10 @@ body[data-view="home"] .vtrack{display:none!important}
 .ttabs small{font-weight:700;font-size:12px;background:var(--soft,#f6e3ec);color:var(--muted,#777);border-radius:99px;padding:0 8px}
 .ttabs button.on small{background:var(--accent);color:#fff}
 .tmore{font-size:13px;color:var(--accent);font-weight:700;justify-self:end}
+#tdetail .mbox{width:min(440px,100%)}
 .tdet{display:grid;gap:10px;text-align:left;width:100%}
+.tdet .ttop{display:flex;justify-content:flex-start}
+.tdet .tdots{display:flex}
 .tdet h3{font-size:20px;margin:0;padding-right:34px}
 .tdet dl{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;margin:0}
 .tdet dt{color:var(--muted,#777);font-size:14px}.tdet dd{margin:0;text-align:right;font-weight:600}
@@ -210,18 +213,19 @@ body[data-view="home"] .vtrack{display:none!important}
 @media(min-width:700px){
   .tgrid{gap:16px}
   .tcard{padding:0;gap:0;overflow:hidden;border-radius:14px;grid-template-columns:1fr auto auto;align-items:center}
-  .ttop{display:contents}
-  .ttop b{grid-column:1;background:var(--soft,#f6e3ec);padding:0 18px;min-height:50px;display:flex;align-items:center;font-size:15px}
-  .thdr{grid-column:2/4;background:var(--soft,#f6e3ec);padding:0 18px;min-height:50px;display:flex!important;align-items:center;justify-content:flex-end;font-size:13px;color:var(--muted)}
+  .tcard .ttop{display:contents}
+  .tcard .ttop b{grid-column:1;background:var(--soft,#f6e3ec);padding:0 18px;min-height:50px;display:flex;align-items:center;font-size:15px}
+  .tcard .thdr{grid-column:2/4;background:var(--soft,#f6e3ec);padding:0 18px;min-height:50px;display:flex!important;align-items:center;justify-content:flex-end;font-size:13px;color:var(--muted)}
   .tname{grid-column:1;padding:20px 18px 6px;font-size:16px;color:var(--ink);font-weight:700}
   .tname .tpm{display:none}
   .tprice{display:block;grid-column:2;padding:20px 24px 6px;font-weight:800;font-size:18px}
-  .ttop .tstat{grid-column:3;grid-row:2;justify-self:end;margin:14px 18px 0 0;font-size:13px;padding:4px 14px}
-  .tdots{grid-column:1/-1;padding:10px 18px 4px}
+  .tcard .ttop .tstat{grid-column:3;grid-row:2;justify-self:end;margin:14px 18px 0 0;font-size:13px;padding:4px 14px}
+  .tcard .tdots{grid-column:1/-1;padding:10px 18px 4px}
   .tcard>.tsub:not(.tname){grid-column:1;padding:6px 18px 14px}
   .tcard>.btn{grid-column:2/4;margin:0 18px 14px;justify-self:end;padding:10px 20px}
   .tmore{grid-column:3;padding:0 18px 14px;align-self:end}
 }
+@media(min-width:700px){#tdetail .mbox{width:min(440px,92vw);padding:26px 28px}.tdet{max-width:100%}}
 .tdots{display:flex;gap:6px}
 .tdots i{flex:1;height:6px;border-radius:99px;background:var(--line)}
 .tdots i.on{background:var(--accent)}
@@ -771,7 +775,7 @@ function tdDraw(){
   var o=TR[TDOPEN],b=$("tdBody");if(!o){tdClose();return}
   b.textContent="";
   var x=el("button","mclose","×");x.type="button";x.setAttribute("aria-label",T("trackClose"));x.addEventListener("click",tdClose);b.appendChild(x);
-  var d=el("div","tdet");
+  var d=el("div","tdet s-"+o.status);
   var h=el("h3",null,o.code);d.appendChild(h);
   var top=el("div","ttop");top.appendChild(el("span","tstat",T(SKEY[o.status]||"statusPending")));d.appendChild(top);
   var dots=el("div","tdots"),at=STEPS.indexOf(o.status);
