@@ -682,7 +682,6 @@ var resumed=false,RET=false;
 function resumePending(){   // the customer paid on the bank page and came back: offer "I have paid" + Telegram
   if(resumed||!CFG)return;var p=null;try{p=JSON.parse(localStorage.getItem("minnie-pending"))}catch(e){}
   if(!p)return;
-  if(!/[?&]paid=1\b/.test(location.search))return;   // the pop-up only opens when the bank page sent the customer back after "Paid"
   if(Date.now()-p.ts>3*3600*1000){clearPending();return}
   var g=CFG.games.filter(function(x){return x.id===p.game})[0];if(!g||!g.packs[p.pack]){clearPending();return}
   resumed=true;choose(g);pack=g.packs[p.pack];vals=p.vals||{};code=p.code;
