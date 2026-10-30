@@ -670,7 +670,7 @@ $("barPay").addEventListener("click",function(){
 });
 function supInit(){
   var on=!!CFG;$("supFab").hidden=!on;if(!on)return;
-  $("supTg").href="https://t.me/"+CFG.settings.telegram+"?text="+encodeURIComponent(T("supMsg"));
+  $("supTg").href="https://t.me/"+(CFG.settings.supportTelegram||CFG.settings.telegram)+"?text="+encodeURIComponent(T("supMsg"));
 }
 $("supFab").addEventListener("click",function(e){e.stopPropagation();$("supbox").hidden=!$("supbox").hidden});
 $("supClose").addEventListener("click",function(){$("supbox").hidden=true});

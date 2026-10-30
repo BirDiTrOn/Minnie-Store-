@@ -138,6 +138,7 @@ input[type=color]{padding:2px;height:42px;width:64px}
         <div class="grid2">
           <label>Store name<input id="s_storeName" maxlength="60"></label>
           <label>Telegram username <small>without @</small><input id="s_telegram" maxlength="40" autocapitalize="off"></label>
+          <label>Support Telegram username <small>without @ · for the live support pop-up · empty = same as above</small><input id="s_supportTelegram" maxlength="40" autocapitalize="off"></label>
           <label>Opens at <small>hour, 0–23 (Phnom Penh time)</small><input id="s_openHour" type="number" min="0" max="23"></label>
           <label>Closes at <small>hour, 1–24</small><input id="s_closeHour" type="number" min="1" max="24"></label>
           <label>Riel per US dollar<input id="s_khrRate" type="number" min="1" step="1" inputmode="numeric"></label>
@@ -331,7 +332,7 @@ $("addGame").addEventListener("click",function(){
 });
 
 /* ---------- settings ---------- */
-var SKEYS=["storeName","telegram","openHour","closeHour","khrRate"];
+var SKEYS=["storeName","telegram","supportTelegram","openHour","closeHour","khrRate"];
 function renderSettings(){
   SKEYS.forEach(function(k){$("s_"+k).value=cfg.settings[k]==null?"":cfg.settings[k]});
   renderQr();

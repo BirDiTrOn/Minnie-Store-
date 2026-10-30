@@ -133,6 +133,7 @@ function clean(input) {
   const settings = {
     storeName: str(s.storeName, 60) || "Store",
     telegram: str(s.telegram, 40).replace(/^@/, "").replace(/[^\w]/g, ""),
+    supportTelegram: str(s.supportTelegram, 40).replace(/^@/, "").replace(/[^\w]/g, ""),
     openHour: Math.round(num(s.openHour, 0, 23, 7)),
     closeHour: Math.round(num(s.closeHour, 1, 24, 23)),
     khrRate: Math.round(num(s.khrRate, 1, 100000, 4100)),
