@@ -268,7 +268,6 @@ body[data-view="home"] .vtrack{display:none!important}
 .sqrs{font-size:13px;color:#555}
 .sqra{font-family:var(--f-display);font-size:30px;font-weight:800;color:#0b1b3a}
 .sqr img{width:min(280px,72vw);aspect-ratio:1;object-fit:contain}
-.sqrc{font-family:var(--f-mono);font-weight:800;letter-spacing:.05em;color:#0b1b3a}
 .sqrm{min-height:20px;font-size:13px;color:#777}
 .paybar{position:fixed;left:0;right:0;bottom:0;z-index:50;display:none;align-items:center;justify-content:space-between;gap:12px;padding:10px 16px calc(10px + env(safe-area-inset-bottom));background:var(--surface,#fff);border-top:1px solid var(--line,#eee);box-shadow:0 -6px 20px rgba(0,0,0,.12)}
 .paybar .pt{font-weight:700;font-size:15px}.paybar .pt b{color:var(--accent);font-size:20px;margin-left:4px;font-variant-numeric:tabular-nums}
@@ -442,7 +441,7 @@ body[data-view="home"] .vtrack{display:none!important}
             <div class="sqr">
              <div class="sqrs" id="sqrStore"></div>
              <div class="sqra" id="sqrAmt"></div>
-             <img id="sqrImg" alt="KHQR" hidden><div class="sqrc" id="sqrCode"></div>
+             <img id="sqrImg" alt="KHQR" hidden>
              <div class="sqrm" id="sqrMsg"></div>
             </div>
             <div class="sfoot">
@@ -729,7 +728,6 @@ function startPay(){
   qs.forEach(function(x){if(x.link&&x.usd!==""&&x.usd!=null&&!qp&&Math.abs(Number(x.usd)-pack.usd)<0.005)qp=x});
   $("tgBtn").href=tgUrl();$("copyMsg").textContent="";$("paidBtn").disabled=false;$("trackLinkBtn").hidden=!(CFG&&CFG.tracking);
   $("payNote").textContent=T("payNote");$("payTitle").textContent=T("payTitle");q.hidden=true;RET=false;
-  if(CFG.settings.qrImage){remember(code);notify("new");showQrImg();return}   // your own QR image in the pop-up
   if(CFG.payway){remember(code);notify("new");payQr();return}   // ABA PayWay is connected: show a fresh QR here
   if(qp){remember(code);notify("new");
     try{localStorage.setItem("minnie-pending",JSON.stringify({code:code,game:cur.id,pack:cur.packs.indexOf(pack),vals:vals,rbx:rbxName(),ts:Date.now()}))}catch(e){}
@@ -750,26 +748,23 @@ $("paidBtn").addEventListener("click",function(){
   if(!w)location.href=tgUrl();
 });
 var PWT=null;
-function openSheet(){$("sqrCode").textContent="";$("sqrImg").hidden=true;$("sqrImg").removeAttribute("src");$("sqrMsg").textContent=T("qrLoading");$("sheetApp").hidden=true;
+function openSheet(){$("sqrImg").hidden=true;$("sqrImg").removeAttribute("src");$("sqrMsg").textContent=T("qrLoading");$("sheetApp").hidden=true;
   $("sqrStore").textContent=CFG.settings.storeName;$("sqrAmt").textContent=money(pack.usd);$("sheet").hidden=false;syncBar();document.body.style.overflow="hidden"}
 function closeSheet(){clearInterval(PWT);$("sheet").hidden=true;syncBar();if($("pay").hidden)document.body.style.overflow=""}
-function showQrImg(){
-  openSheet();$("sqrCode").textContent=code;$("sqrImg").src=CFG.settings.qrImage;$("sqrImg").hidden=false;$("sqrMsg").textContent="";$("sheetApp").hidden=true;
-}
 function payDone(){closeSheet();RET=true;clearPending();$("paidBtn").disabled=true;$("payTitle").textContent=T("payReturnTitle");$("copyMsg").textContent=T("payReturnMsg");openPay()}
 // ABA PayWay: ask the shop for a QR with this order's exact price, then watch until ABA says it is paid
 function payQr(){
   openSheet();var myCode=code,tries=0;
   fetch("/api/pay",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({code:code,game:cur.id,pack:cur.packs.indexOf(pack)})})
     .then(function(r){return r.json()}).then(function(r){
-      if(!r||!r.ok||!r.qrImage)throw (r&&r.error)||"no answer";
+      if(!r||!r.ok||!r.qrImage)throw 0;
       $("sqrImg").src=r.qrImage;$("sqrImg").hidden=false;$("sqrMsg").textContent="";
       if(r.deeplink&&/Android|iPhone|iPad/i.test(navigator.userAgent)){$("sheetApp").href=r.deeplink;$("sheetApp").hidden=false}
       PWT=setInterval(function(){
         if(code!==myCode||++tries>450){clearInterval(PWT);return}
         fetch("/api/pay-status?code="+encodeURIComponent(myCode),{cache:"no-store"}).then(function(x){return x.json()}).then(function(x){if(x&&x.paid&&code===myCode)payDone()}).catch(function(){});
       },4000);
-    }).catch(function(e){$("sqrMsg").textContent=T("qrFail")+(typeof e==="string"?" ["+e+"]":"")});
+    }).catch(function(){$("sqrMsg").textContent=T("qrFail")});
 }
 $("sheetClose").addEventListener("click",function(){closeSheet();clearPending()});
 $("sheet").addEventListener("click",function(e){if(e.target===$("sheet")){closeSheet();clearPending()}});

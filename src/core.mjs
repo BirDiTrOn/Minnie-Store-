@@ -138,7 +138,6 @@ function clean(input) {
     closeHour: Math.round(num(s.closeHour, 1, 24, 23)),
     khrRate: Math.round(num(s.khrRate, 1, 100000, 4100)),
     qrAccountName: str(s.qrAccountName, 60),
-    qrImage: imgUrl(s.qrImage),   // your own payment QR, shown in the pay pop-up
     texts: {},
   };
   // One payment link per price (only https links are kept).

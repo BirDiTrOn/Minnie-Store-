@@ -145,12 +145,6 @@ input[type=color]{padding:2px;height:42px;width:64px}
         </div>
       </div>
       <div class="card stack" style="margin-top:14px">
-        <b style="font-size:15px">Payment QR code (pop-up)</b>
-        <p class="hint" style="margin:0">Upload your ABA payment QR. When a customer presses pay, it opens as a pop-up over the store with the amount, the order code and the "I have paid" button. While a QR is uploaded it is used instead of the payment links below.</p>
-        <div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap"><img id="qrPrev" alt="" style="width:130px;height:130px;object-fit:contain;border:1px solid var(--line);border-radius:12px;background:#fff" hidden><div class="stack" style="gap:8px"><button class="btn small" id="qrUp" type="button">Upload QR image</button><button class="btn small danger" id="qrRm" type="button" hidden>Remove QR</button></div></div>
-        <input type="file" id="qrFile" accept="image/*" hidden>
-      </div>
-      <div class="card stack" style="margin-top:14px">
         <b style="font-size:15px">Payment link for each price</b>
         <p class="hint" style="margin:0">Every price from your games is listed below. Paste that price's payment link next to it (a link made for exactly that amount). When a customer presses pay, the store opens the link for their total in the same window.</p>
         <div id="qrList" class="stack"></div>
@@ -425,11 +419,7 @@ function qrRow(key){
   r.firstChild.textContent="$"+key;r.querySelector("[data-q=link]").value=e.link||"";
   return r;
 }
-function renderQrImg(){var u=cfg.settings.qrImage||"";$("qrPrev").hidden=!u;if(u)$("qrPrev").src=u;$("qrRm").hidden=!u;$("qrUp").textContent=u?"Replace QR image":"Upload QR image"}
-$("qrUp").addEventListener("click",function(){$("qrFile").click()});
-$("qrFile").addEventListener("change",function(){pickAndUpload($("qrFile"),900).then(function(u){cfg.settings.qrImage=u;setDirty(true);renderQrImg();toast("QR uploaded. Press Save.")}).catch(function(e){if(e.message!=="none")toast(e.message,true)})});
-$("qrRm").addEventListener("click",function(){cfg.settings.qrImage="";setDirty(true);renderQrImg()});
-function renderQr(){renderQrImg();
+function renderQr(){
   var box=$("qrList");box.textContent="";var prices=usedPrices();
   prices.forEach(function(k){box.appendChild(qrRow(k))});
   if(!prices.length)box.innerHTML='<p class="hint" style="margin:0">Add games with prices first.</p>';
