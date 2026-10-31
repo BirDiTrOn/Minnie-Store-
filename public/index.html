@@ -757,14 +757,14 @@ function payQr(){
   openSheet();var myCode=code,tries=0;
   fetch("/api/pay",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({code:code,game:cur.id,pack:cur.packs.indexOf(pack)})})
     .then(function(r){return r.json()}).then(function(r){
-      if(!r||!r.ok||!r.qrImage)throw (r&&r.error)||"no answer";
+      if(!r||!r.ok||!r.qrImage)throw 0;
       $("sqrImg").src=r.qrImage;$("sqrImg").hidden=false;$("sqrMsg").textContent="";
       if(r.deeplink&&/Android|iPhone|iPad/i.test(navigator.userAgent)){$("sheetApp").href=r.deeplink;$("sheetApp").hidden=false}
       PWT=setInterval(function(){
         if(code!==myCode||++tries>450){clearInterval(PWT);return}
         fetch("/api/pay-status?code="+encodeURIComponent(myCode),{cache:"no-store"}).then(function(x){return x.json()}).then(function(x){if(x&&x.paid&&code===myCode)payDone()}).catch(function(){});
       },4000);
-    }).catch(function(e){$("sqrMsg").textContent=T("qrFail")+(typeof e==="string"?" ["+e+"]":"")});
+    }).catch(function(){$("sqrMsg").textContent=T("qrFail")});
 }
 $("sheetClose").addEventListener("click",function(){closeSheet();clearPending()});
 $("sheet").addEventListener("click",function(e){if(e.target===$("sheet")){closeSheet();clearPending()}});
