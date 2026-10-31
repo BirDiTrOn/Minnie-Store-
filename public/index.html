@@ -682,6 +682,7 @@ var resumed=false,RET=false;
 function resumePending(){   // the customer paid on the bank page and came back: offer "I have paid" + Telegram
   if(resumed||!CFG)return;var p=null;try{p=JSON.parse(localStorage.getItem("minnie-pending"))}catch(e){}
   if(!p)return;
+  if(!/[?&]paid=1\b/.test(location.search))return;   // the pop-up only opens when the bank page sent the customer back after "Paid"
   if(Date.now()-p.ts>3*3600*1000){clearPending();return}
   var g=CFG.games.filter(function(x){return x.id===p.game})[0];if(!g||!g.packs[p.pack]){clearPending();return}
   resumed=true;choose(g);pack=g.packs[p.pack];vals=p.vals||{};code=p.code;
@@ -756,14 +757,14 @@ function payQr(){
   openSheet();var myCode=code,tries=0;
   fetch("/api/pay",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({code:code,game:cur.id,pack:cur.packs.indexOf(pack)})})
     .then(function(r){return r.json()}).then(function(r){
-      if(!r||!r.ok||!r.qrImage)throw 0;
+      if(!r||!r.ok||!r.qrImage)throw (r&&r.error)||"no answer";
       $("sqrImg").src=r.qrImage;$("sqrImg").hidden=false;$("sqrMsg").textContent="";
       if(r.deeplink&&/Android|iPhone|iPad/i.test(navigator.userAgent)){$("sheetApp").href=r.deeplink;$("sheetApp").hidden=false}
       PWT=setInterval(function(){
         if(code!==myCode||++tries>450){clearInterval(PWT);return}
         fetch("/api/pay-status?code="+encodeURIComponent(myCode),{cache:"no-store"}).then(function(x){return x.json()}).then(function(x){if(x&&x.paid&&code===myCode)payDone()}).catch(function(){});
       },4000);
-    }).catch(function(){$("sqrMsg").textContent=T("qrFail")});
+    }).catch(function(e){$("sqrMsg").textContent=T("qrFail")+(typeof e==="string"?" ["+e+"]":"")});
 }
 $("sheetClose").addEventListener("click",function(){closeSheet();clearPending()});
 $("sheet").addEventListener("click",function(e){if(e.target===$("sheet")){closeSheet();clearPending()}});
