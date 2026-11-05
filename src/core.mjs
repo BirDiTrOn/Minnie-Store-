@@ -368,7 +368,7 @@ async function shopAsk(chat, cfg, st) {
   const g = cfg.games.find((x) => x.id === st.g);
   if (st.i < g.fields.length) {
     const f = g.fields[st.i];
-    await shopCall("sendMessage", { chat_id: chat, text: "✏️ សូមបញ្ចូល: " + f.label + (shopIsRbx(g, f) ? "\n(ឈ្មោះអ្នកប្រើ Roblox ដូចជា Nansnkc)" : ""), reply_markup: shopKb([[{ text: "❌ បោះបង់", callback_data: "x:" }]]) });
+    await shopCall("sendMessage", { chat_id: chat, text: "✏️ សូមបញ្ចូល: " + f.label, reply_markup: shopKb([[{ text: "❌ បោះបង់", callback_data: "x:" }]]) });
     return;
   }
   st.s = "confirm"; await kvSet("bot:" + chat, st);
