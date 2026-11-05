@@ -115,7 +115,8 @@ async function setOrderStatus(code, status, base) {
       } catch (e) { /* ignore */ }
     }
     await sbOrderPatch(code, { status, history: [...(o.history || []), { s: status, t: now }], updated_at: now });
-  } catch (e) { /* ignore */ }
+    if (o.cust_id && status !== "verifying" && status !== "pending") await shopNotify(o.cust_id, code, status);   // Telegram-shop customers get told
+  } catch (e) { if (ENV.DEBUG_ERR) console.log("setOrderStatus err", e); }
 }
 const publicOrder = (o) => ({ code: o.code, game: o.game, pack: o.pack, usd: Number(o.usd), status: o.status, created: o.created_at, updated: o.updated_at, history: o.history || [] });
 
@@ -138,6 +139,7 @@ function clean(input) {
     closeHour: Math.round(num(s.closeHour, 1, 24, 23)),
     khrRate: Math.round(num(s.khrRate, 1, 100000, 4100)),
     qrAccountName: str(s.qrAccountName, 60),
+    qrImage: imgUrl(s.qrImage),   // your own payment QR, shown in the pay pop-up
     texts: {},
   };
   // One payment link per price (only https links are kept).
@@ -320,6 +322,165 @@ async function robloxLookup(name) {
   return { found: true, id, name: str(me.name, 30), displayName: str(me.displayName || me.name, 40), verified: !!me.hasVerifiedBadge,
     avatar: /^https:\/\/[\w.-]+\.rbxcdn\.com\/[\w\-\/.%?=&]+$/.test(img || "") ? img : "", friends, followers, following };
 }
+/* ---------- Telegram SHOP BOT: customers order inside Telegram (second bot, token in SHOP_BOT_TOKEN) ---------- */
+const shopReady = () => !!(ENV.SHOP_BOT_TOKEN && sbConfigured());
+const shopSecret = async (env) => b64url(await hmac(await secret(env), "shop-webhook")).slice(0, 40);
+async function shopCall(method, payload) {
+  if (!ENV.SHOP_BOT_TOKEN) return { sent: false, error: "SHOP_BOT_TOKEN is not set on the server." };
+  const api = (ENV.TELEGRAM_API || "https://api.telegram.org").replace(/\/+$/, "");
+  const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), 6000);
+  try {
+    const r = await fetch(api + "/bot" + ENV.SHOP_BOT_TOKEN + "/" + method, { method: "POST", headers: { "content-type": "application/json" }, signal: ctl.signal, body: JSON.stringify(payload) });
+    const d = await r.json().catch(() => ({}));
+    return d.ok ? { sent: true, result: d.result } : { sent: false, error: "Telegram said: " + str(d.description || ("HTTP " + r.status), 200) };
+  } catch (e) { return { sent: false, error: "Could not reach Telegram." }; } finally { clearTimeout(t); }
+}
+const SHOP_ST = { pending: "⏳ រង់ចាំការបង់ប្រាក់", verifying: "🟡 កំពុងពិនិត្យការបង់ប្រាក់", paid: "✅ បានទទួលការបង់ប្រាក់ · កំពុងបញ្ចូល", delivered: "📦 បានបញ្ចូលរួចរាល់", rejected: "❌ មិនទាន់ទទួលបានការបង់ប្រាក់" };
+/* tell the customer in Telegram when the owner changes their order */
+async function shopNotify(custId, code, status) {
+  if (!ENV.SHOP_BOT_TOKEN || !/^tg:\d+$/.test(String(custId || ""))) return;
+  const text = { paid: "✅ យើងបានទទួលការបង់ប្រាក់របស់អ្នកហើយ! កំពុងបញ្ចូលជូន…", delivered: "📦 ការបញ្ជាទិញរបស់អ្នកបានបញ្ចូលរួចរាល់! សូមអរគុណ 💖", rejected: "❌ យើងមិនទាន់ទទួលបានការបង់ប្រាក់សម្រាប់ការបញ្ជាទិញនេះទេ។ ប្រសិនបើអ្នកបានបង់ហើយ សូមផ្ញើរូបថតវិក្កយបត្រមកយើង។" }[status];
+  if (text) await shopCall("sendMessage", { chat_id: custId.slice(3), text: text + "\n\n" + code });
+}
+const shopIsRbx = (g, f) => f.roblox === true || (f.roblox !== false && /roblox|robux/i.test(g.name + " " + g.id + " " + f.label));
+const shopKb = (rows) => ({ inline_keyboard: rows });
+const shopHome = (cfg) => shopKb(cfg.games.filter((g) => !g.hidden).map((g) => [{ text: g.name + (g.soldOut || (typeof g.stock === "number" && g.stock <= 0) ? " · អស់ស្តុក" : ""), callback_data: "g:" + g.id }]).concat([[{ text: "📦 តាមដានការបញ្ជាទិញ", callback_data: "t:" }]]));
+function shopOrigin(req, url) {
+  const host = req.headers.get("x-forwarded-host") || url.host, proto = (req.headers.get("x-forwarded-proto") || url.protocol.replace(":", "")).split(",")[0];
+  return proto + "://" + host;
+}
+async function shopNewCode() {
+  const A = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  for (let n = 0; n < 6; n++) {
+    let c = "NS-"; const r = crypto.getRandomValues(new Uint8Array(5)); for (const b of r) c += A[b % A.length];
+    if (!(await sbOrderGet(c).catch(() => null))) return c;
+  }
+  throw new Error("code");
+}
+async function shopSummary(cfg, st) {
+  const g = cfg.games.find((x) => x.id === st.g), p = g && g.packs[st.p];
+  if (!g || !p) return null;
+  const khr = p.khr || Math.round((p.usd * cfg.settings.khrRate) / 100) * 100;
+  const lines = g.fields.map((f) => f.label + ": " + (st.v[f.key] || "-")).join("\n");
+  return { g, p, khr, text: "🧾 សង្ខេបការបញ្ជាទិញ\n\nហ្គេម: " + g.name + "\nកញ្ចប់: " + p.name + (lines ? "\n" + lines : "") + "\nសរុប: $" + Number(p.usd).toFixed(2) + " (" + khr.toLocaleString("en-US") + " ៛)" };
+}
+async function shopAsk(chat, cfg, st) {
+  const g = cfg.games.find((x) => x.id === st.g);
+  if (st.i < g.fields.length) {
+    const f = g.fields[st.i];
+    await shopCall("sendMessage", { chat_id: chat, text: "✏️ សូមបញ្ចូល: " + f.label + (shopIsRbx(g, f) ? "\n(ឈ្មោះអ្នកប្រើ Roblox ដូចជា Nansnkc)" : ""), reply_markup: shopKb([[{ text: "❌ បោះបង់", callback_data: "x:" }]]) });
+    return;
+  }
+  st.s = "confirm"; await kvSet("bot:" + chat, st);
+  const sm = await shopSummary(cfg, st);
+  await shopCall("sendMessage", { chat_id: chat, text: sm.text, reply_markup: shopKb([[{ text: "✅ បញ្ជាក់ និងបង់ប្រាក់", callback_data: "c:" }], [{ text: "❌ បោះបង់", callback_data: "x:" }]]) });
+}
+async function shopCreateOrder(chat, from, st, origin) {
+  const cfg = await load(), sm = await shopSummary(cfg, st);
+  if (!sm) return shopCall("sendMessage", { chat_id: chat, text: "សូមអភ័យទោស ទំនិញនេះមិនមានទៀតទេ។ សូមចុច /start" });
+  const { g, p, khr } = sm;
+  if (typeof g.stock === "number") {
+    const need = packUnits(p);
+    if (g.stock < need) return shopCall("sendMessage", { chat_id: chat, text: "សូមអភ័យទោស ទំនិញនេះអស់ស្តុកហើយ។" });
+    g.stock -= need; try { await sbSaveConfig(cfg); } catch (e) { /* ignore */ }
+  }
+  const code = await shopNewCode();
+  let rbxLine = "";
+  for (const f of g.fields) if (shopIsRbx(g, f) && st.v[f.key]) {
+    const rn = String(st.v[f.key]);
+    try { const r = await robloxLookup(rn); rbxLine = r.found ? "\nRoblox: " + r.displayName + " (@" + r.name + ") · id " + r.id + "\nhttps://www.roblox.com/users/" + r.id + "/profile" : "\nRoblox: @" + rn + " (not found)"; } catch (e) { rbxLine = "\nRoblox: @" + rn; }
+  }
+  const who = (from && (from.username ? "@" + from.username : [from.first_name, from.last_name].filter(Boolean).join(" "))) || "customer";
+  const acct = g.fields.map((f) => f.label + ": " + (st.v[f.key] || "-")).join(" | ") || "-";
+  const body = "Order: " + code + "\nGame: " + g.name + "\nPack: " + p.name + "\nAccount: " + str(acct, 160) + rbxLine + "\nTotal: $" + Number(p.usd).toFixed(2) + " (" + khr.toLocaleString("en-US") + " ៛)\nFrom: Telegram shop bot · " + str(who, 60);
+  await setOrderStatus(code, "pending", { game: g.name, pack: p.name, usd: p.usd, cust_id: "tg:" + chat });
+  await kvSet("ob:" + code, { b: body });
+  await kvSet("bot:" + chat, {});
+  const caption = "💳 សូមបង់ប្រាក់ចំនួន $" + Number(p.usd).toFixed(2) + " (" + khr.toLocaleString("en-US") + " ៛)\nលេខកូដបញ្ជាទិញ: " + code + "\n\nបន្ទាប់ពីបង់ប្រាក់ សូមចុច «ខ្ញុំបានបង់ប្រាក់ហើយ» ហើយផ្ញើរូបថតវិក្កយបត្រមកយើង។";
+  const link = (cfg.settings.qrCodes || []).find((q) => Math.abs(Number(q.usd) - Number(p.usd)) < 0.005 && q.link);
+  const rows = [];
+  if (link && !cfg.settings.qrImage) rows.push([{ text: "💳 បង់ប្រាក់តាម ABA", url: link.link }]);
+  rows.push([{ text: "✅ ខ្ញុំបានបង់ប្រាក់ហើយ", callback_data: "d:" + code }]);
+  const markup = shopKb(rows);
+  if (cfg.settings.qrImage) {
+    const r = await shopCall("sendPhoto", { chat_id: chat, photo: origin + cfg.settings.qrImage, caption, reply_markup: markup });
+    if (r.sent) return r;
+  }
+  return shopCall("sendMessage", { chat_id: chat, text: caption + (link || cfg.settings.qrImage ? "" : "\n\nសូមទាក់ទង @" + cfg.settings.telegram + " ដើម្បីទទួលបានវិធីបង់ប្រាក់។"), reply_markup: markup });
+}
+async function shopUpdate(up, origin) {
+  const cq = up.callback_query, msg = up.message;
+  const chat = String((cq ? cq.message && cq.message.chat && cq.message.chat.id : msg && msg.chat && msg.chat.id) || "");
+  if (!/^\d+$/.test(chat)) { if (cq) await shopCall("answerCallbackQuery", { callback_query_id: cq.id }); return; }   // private chats only
+  if (throttled("sb:" + chat, 40, 60000)) return;
+  const cfg = await load(), from = (cq || msg).from;
+  const ack = () => cq && shopCall("answerCallbackQuery", { callback_query_id: cq.id });
+  const mid = cq && cq.message.message_id;
+  const nav = (text, markup) => mid ? shopCall("editMessageText", { chat_id: chat, message_id: mid, text, reply_markup: markup }).then((r) => r.sent || /not modified/i.test(r.error || "") ? r : shopCall("sendMessage", { chat_id: chat, text, reply_markup: markup })) : shopCall("sendMessage", { chat_id: chat, text, reply_markup: markup });
+  const home = () => nav("សូមស្វាគមន៍មកកាន់ " + cfg.settings.storeName + " 💖\nសូមជ្រើសរើសហ្គេម៖", shopHome(cfg));
+  const track = async () => {
+    const r = await fetch(SB_URL() + "/rest/v1/orders?cust_id=eq." + encodeURIComponent("tg:" + chat) + "&order=created_at.desc&limit=6&select=code,game,pack,usd,status", { headers: sbHeaders() });
+    const rows = r.ok ? await r.json() : [];
+    return nav(rows.length ? "📦 ការបញ្ជាទិញរបស់អ្នក\n\n" + rows.map((o) => o.code + " · " + o.game + " · " + o.pack + " · $" + Number(o.usd).toFixed(2) + "\n" + (SHOP_ST[o.status] || o.status)).join("\n\n") : "អ្នកមិនទាន់មានការបញ្ជាទិញទេ។", shopKb([[{ text: "⬅️ ទំព័រដើម", callback_data: "h:" }]]));
+  };
+  if (cq) {
+    const [k, a, b] = String(cq.data || "").split(":");
+    await ack();
+    if (k === "h") { await kvSet("bot:" + chat, {}); return home(); }
+    if (k === "t") return track();
+    if (k === "x") { await kvSet("bot:" + chat, {}); return home(); }
+    if (k === "g") {
+      const g = cfg.games.find((x) => x.id === a && !x.hidden); if (!g) return home();
+      const rows = g.packs.map((p, i) => [{ text: p.name + " · $" + Number(p.usd).toFixed(2) + (typeof g.stock === "number" && g.stock < packUnits(p) ? " (អស់ស្តុក)" : ""), callback_data: "p:" + g.id + ":" + i }]);
+      rows.push([{ text: "⬅️ ត្រឡប់ក្រោយ", callback_data: "h:" }]);
+      return nav(g.name + (g.note ? "\n" + g.note : "") + "\n\nសូមជ្រើសរើសកញ្ចប់៖", shopKb(rows));
+    }
+    if (k === "p") {
+      const g = cfg.games.find((x) => x.id === a && !x.hidden), p = g && g.packs[Number(b)];
+      if (!g || !p) return home();
+      if (g.soldOut || (typeof g.stock === "number" && g.stock < packUnits(p))) return shopCall("sendMessage", { chat_id: chat, text: "សូមអភ័យទោស កញ្ចប់នេះអស់ស្តុកហើយ។" });
+      const st = { g: g.id, p: Number(b), i: 0, v: {}, s: "field" };
+      await kvSet("bot:" + chat, st);
+      return shopAsk(chat, cfg, st);
+    }
+    if (k === "c") {
+      const st = await kvGet("bot:" + chat); if (!st || st.s !== "confirm") return home();
+      return shopCreateOrder(chat, from, st, origin);
+    }
+    if (k === "d") {
+      const code = String(a || "").toUpperCase(); if (!/^NS-[A-Z0-9]{5}$/.test(code)) return;
+      const o = await sbOrderGet(code).catch(() => null);
+      if (!o || o.cust_id !== "tg:" + chat) return;
+      if (o.status !== "pending") return shopCall("sendMessage", { chat_id: chat, text: SHOP_ST[o.status] + "\n\n" + code });
+      await setOrderStatus(code, "verifying");
+      const rec = await kvGet("ob:" + code);
+      await tgUpsertOrder(code, "verifying", { body: rec && rec.b || ("Order: " + code + "\nGame: " + o.game + "\nPack: " + o.pack + "\nTotal: $" + Number(o.usd).toFixed(2)) });
+      return shopCall("sendMessage", { chat_id: chat, text: "🟡 យើងកំពុងពិនិត្យការបង់ប្រាក់របស់អ្នក។ សូមផ្ញើរូបថតវិក្កយបត្រមកទីនេះ ឬទៅ @" + (cfg.settings.supportTelegram || cfg.settings.telegram) + "\n\n" + code });
+    }
+    return;
+  }
+  const text = str(msg && msg.text, 200);
+  if (/^\/(start|menu|shop)\b/i.test(text)) { await kvSet("bot:" + chat, {}); return shopCall("sendMessage", { chat_id: chat, text: "សូមស្វាគមន៍មកកាន់ " + cfg.settings.storeName + " 💖\nសូមជ្រើសរើសហ្គេម៖", reply_markup: shopHome(cfg) }); }
+  if (/^\/(orders|track)\b/i.test(text)) return track();
+  const st = await kvGet("bot:" + chat);
+  if (st && st.s === "field" && text) {
+    const g = cfg.games.find((x) => x.id === st.g), f = g && g.fields[st.i];
+    if (!g || !f) { await kvSet("bot:" + chat, {}); return; }
+    let val = text;
+    if (shopIsRbx(g, f)) {
+      const n = text.replace(/^@/, "");
+      if (!/^[A-Za-z0-9_]{3,20}$/.test(n)) return shopCall("sendMessage", { chat_id: chat, text: "ឈ្មោះមិនត្រឹមត្រូវ (៣–២០ តួ អក្សរ លេខ ឬ _)។ សូមព្យាយាមម្តងទៀត។" });
+      try {
+        const r = await robloxLookup(n);
+        if (!r.found) return shopCall("sendMessage", { chat_id: chat, text: "រកមិនឃើញគណនី Roblox «" + n + "» ទេ។ សូមពិនិត្យឈ្មោះ ហើយព្យាយាមម្តងទៀត។" });
+        val = r.name; await shopCall("sendMessage", { chat_id: chat, text: "✅ " + r.displayName + " (@" + r.name + ")\n" + (r.friends ?? "-") + " មិត្តភក្តិ · " + (r.followers ?? "-") + " អ្នកតាមដាន" });
+      } catch (e) { val = n; }
+    }
+    st.v[f.key] = val; st.i += 1; await kvSet("bot:" + chat, st);
+    return shopAsk(chat, cfg, st);
+  }
+  return shopCall("sendMessage", { chat_id: chat, text: "ចុច /start ដើម្បីបញ្ជាទិញ 🛒", reply_markup: shopHome(cfg) });
+}
 const seen = new Map();   // best-effort rate limit + duplicate guard (per server instance)
 function throttled(key, limit, ms) {
   const now = Date.now(); const a = (seen.get(key) || []).filter((x) => now - x < ms);
@@ -354,6 +515,7 @@ export async function handle(req, env = {}) {
         telegramBotTokenSet: !!env.TELEGRAM_BOT_TOKEN,
         telegramChatIdSet: !!env.TELEGRAM_CHAT_ID,
         paywayMerchantIdSet: !!env.PAYWAY_MERCHANT_ID,
+        shopBotTokenSet: !!env.SHOP_BOT_TOKEN,
         paywayApiKeySet: !!env.PAYWAY_API_KEY,
         ordersTableOk: await (async () => { if (!sbConfigured()) return false; try { await sbOrderGet("NS-00000"); return true; } catch (e) { return false; } })(),
         settingNamesSeen: Object.keys(env).filter((k) => /admin|supabase|telegram|payway/i.test(k)).map((k) => JSON.stringify(k)),
@@ -406,6 +568,15 @@ export async function handle(req, env = {}) {
       if (event !== "paid") return json({ ok: true, sent: false });
       const r = await tgUpsertOrder(code, "verifying", { body: msgBody });
       return json({ ok: true, sent: r.sent });
+    }
+
+    // Telegram shop bot webhook (customers chatting with the shop bot)
+    if (path === "/api/shopbot" && m === "POST") {
+      if (!shopReady() || !env.ADMIN_PASSWORD) return json({ ok: false }, 503);
+      if (!(await safeEq(req.headers.get("x-telegram-bot-api-secret-token") || "", await shopSecret(env)))) return json({ ok: false }, 401);
+      const up = await req.json().catch(() => ({}));
+      try { await shopUpdate(up, shopOrigin(req, url)); } catch (e) { /* never make Telegram retry forever */ }
+      return json({ ok: true });
     }
 
     // Telegram calls this when someone taps a button on an order message (secret header proves it is Telegram)
@@ -517,6 +688,11 @@ export async function handle(req, env = {}) {
       if (path === "/api/admin/telegram-webhook" && m === "POST") {
         const host = req.headers.get("x-forwarded-host") || url.host, proto = (req.headers.get("x-forwarded-proto") || url.protocol.replace(":", "")).split(",")[0];
         const r = await tgCall("setWebhook", { url: proto + "://" + host + "/api/telegram", secret_token: await tgSecret(env), allowed_updates: ["callback_query"], drop_pending_updates: true });
+        return json(r, r.sent ? 200 : 502);
+      }
+      if (path === "/api/admin/shopbot-webhook" && m === "POST") {
+        const r = await shopCall("setWebhook", { url: shopOrigin(req, url) + "/api/shopbot", secret_token: await shopSecret(env), allowed_updates: ["message", "callback_query"], drop_pending_updates: true });
+        if (r.sent) await shopCall("setMyCommands", { commands: [{ command: "start", description: "ចាប់ផ្តើមបញ្ជាទិញ" }, { command: "orders", description: "តាមដានការបញ្ជាទិញ" }] });
         return json(r, r.sent ? 200 : 502);
       }
       if (path === "/api/admin/orders" && m === "GET") {
