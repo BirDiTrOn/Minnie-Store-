@@ -396,11 +396,11 @@ async function shopCreateOrder(chat, from, st, origin) {
   await setOrderStatus(code, "pending", { game: g.name, pack: p.name, usd: p.usd, cust_id: "tg:" + chat });
   await kvSet("ob:" + code, { b: body });
   await kvSet("bot:" + chat, {});
-  const caption = "💳 សូមបង់ប្រាក់ចំនួន $" + Number(p.usd).toFixed(2) + " (" + khr.toLocaleString("en-US") + " ៛)\nលេខកូដបញ្ជាទិញ: " + code + "\n\nបន្ទាប់ពីបង់ប្រាក់ សូមចុច «ខ្ញុំបានបង់ប្រាក់ហើយ» ហើយផ្ញើរូបថតវិក្កយបត្រមកយើង។";
+  const caption = "💳 សូមបង់ប្រាក់ចំនួន $" + Number(p.usd).toFixed(2) + " (" + khr.toLocaleString("en-US") + " ៛)\nលេខកូដបញ្ជាទិញ: " + code + "\n\nបន្ទាប់ពីបង់ប្រាក់ សូមចុច «ភ្ជាប់បង្កាន់ដៃបង់ប្រាក់» ហើយផ្ញើរូបថតបង្កាន់ដៃមកយើង។";
   const link = (cfg.settings.qrCodes || []).find((q) => Math.abs(Number(q.usd) - Number(p.usd)) < 0.005 && q.link);
   const rows = [];
   if (link && !cfg.settings.qrImage) rows.push([{ text: "💳 បង់ប្រាក់តាម ABA", url: link.link }]);
-  rows.push([{ text: "✅ ខ្ញុំបានបង់ប្រាក់ហើយ", callback_data: "d:" + code }]);
+  rows.push([{ text: "📎 ភ្ជាប់បង្កាន់ដៃបង់ប្រាក់", callback_data: "d:" + code }]);
   const markup = shopKb(rows);
   if (cfg.settings.qrImage) {
     const r = await shopCall("sendPhoto", { chat_id: chat, photo: origin + cfg.settings.qrImage, caption, reply_markup: markup });
